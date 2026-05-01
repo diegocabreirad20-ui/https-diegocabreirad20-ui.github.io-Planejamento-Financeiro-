@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard Financeiro</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Arial, sans-serif; background: #0F172A; color: #F1F5F9; min-height: 100vh; }
+
+    /* ── Login ── */
+    #login-page { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 1rem; }
+    .login-card { background: #1E293B; border-radius: 12px; padding: 2.5rem; width: 100%; max-width: 380px; text-align: center; }
+    .login-card h1 { font-size: 1.8rem; margin-bottom: .5rem; }
+    .login-card p { color: #94A3B8; margin-bottom: 2rem; font-size: .9rem; }
+
+    .inp { width: 100%; padding: .7rem 1rem; margin-bottom: 1rem; background: #0F172A; border: 1px solid #334155; border-radius: 8px; color: #F1F5F9; font-size: .95rem; font-family: Arial, sans-serif; outline: none; }
+    .inp:focus { border-color: #2563EB; }
+    select.inp { padding: .6rem .75rem; cursor: pointer; }
+    textarea.inp { resize: vertical; min-height: 60px; }
+
+    .btn { padding: .7rem 1.4rem; border: none; border-radius: 8px; cursor: pointer; font-size: .9rem; font-family: Arial, sans-serif; font-weight: 600; transition: opacity .15s; }
+    .btn:hover { opacity: .82; }
+    .btn-primary { background: #2563EB; color: #fff; }
+    .btn-danger  { background: #EF4444; color: #fff; }
+    .btn-success { background: #10B981; color: #fff; }
+    .btn-secondary { background: #334155; color: #F1F5F9; }
+    .btn-sm  { padding: .35rem .75rem; font-size: .78rem; }
+    .btn-block { width: 100%; }
+    .err { color: #EF4444; font-size: .82rem; margin-top: .4rem; }
+
+    /* ── App layout ── */
+    #app { display: flex; min-height: 100vh; }
+
+    /* ── Sidebar ── */
+    #sidebar { width: 230px; min-width: 230px; background: #1E293B; display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh; overflow-y: auto; }
+    .s-logo  { font-size: 1.2rem; font-weight: bold; padding: 1.25rem 1.25rem 1rem; border-bottom: 1px solid #334155; }
+    .s-user  { padding: .6rem 1.25rem; font-size: .78rem; color: #94A3B8; border-bottom: 1px solid #334155; }
+    #sidebar nav { padding: .75rem 0; flex: 1; }
+    .nav-item { display: block; padding: .65rem 1.25rem; cursor: pointer; color: #94A3B8; text-decoration: none; font-size: .87rem; transition: all .15s; border-left: 3px solid transparent; }
+    .nav-item:hover { color: #F1F5F9; background: #0F172A3A; }
+    .nav-item.active { color: #60A5FA; background: #1D3760; border-left-color: #2563EB; }
+
+    /* ── Weekly box ── */
+    .weekly-box { margin: .75rem; background: #0F172A; border-radius: 8px; padding: .9rem; font-size: .78rem; }
+    .weekly-box h4 { color: #64748B; margin-bottom: .6rem; text-transform: uppercase; letter-spacing: .05em; font-size: .7rem; }
+    .weekly-row { display: flex; justify-content: space-between; margin-bottom: .35rem; }
+    .weekly-row .lbl { color: #94A3B8; }
+    .c-green { color: #10B981; font-weight: bold; }
+    .c-red   { color: #EF4444; font-weight: bold; }
+    .c-yel   { color: #F59E0B; font-weight: bold; }
+    .c-blue  { color: #60A5FA; font-weight: bold; }
+
+    .s-footer { padding: .9rem 1.25rem; border-top: 1px solid #334155; }
+
+    /* ── Main content ── */
+    #content { flex: 1; padding: 1.75rem; overflow-y: auto; min-width: 0; }
+    .page { display: none; }
+    .page.active { display: block; }
+
+    /* ── Page header ── */
+    .ph { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .75rem; margin-bottom: 1.5rem; }
+    .ph-title { font-size: 1.4rem; font-weight: bold; }
+    .ph-right { display: flex; gap: .5rem; align-items: center; flex-wrap: wrap; }
+
+    /* ── Cards grid ── */
+    .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: .9rem; margin-bottom: 1.75rem; }
+    .card { background: #1E293B; border-radius: 10px; padding: 1.1rem; }
+    .card-lbl { font-size: .7rem; color: #94A3B8; text-transform: uppercase; letter-spacing: .05em; margin-bottom: .4rem; }
+    .card-val { font-size: 1.35rem; font-weight: bold; }
+
+    /* ── Month tabs ── */
+    .month-nav { display: flex; gap: .35rem; overflow-x: auto; margin-bottom: 1.4rem; padding-bottom: .25rem; }
+    .month-tab { padding: .38rem .8rem; border-radius: 6px; cursor: pointer; background: #1E293B; color: #94A3B8; font-size: .82rem; white-space: nowrap; border: 1px solid #334155; transition: all .15s; }
+    .month-tab:hover { color: #F1F5F9; border-color: #4A80D4; }
+    .month-tab.active { background: #2563EB; color: #fff; border-color: #2563EB; }
+
+    .year-sel { background: #1E293B; border: 1px solid #334155; color: #F1F5F9; padding: .38rem .7rem; border-radius: 6px; font-family: Arial, sans-serif; font-size: .82rem; cursor: pointer; outline: none; }
+    .year-sel:focus { border-color: #2563EB; }
+
+    /* ── Tables ── */
+    .tbl-wrap { background: #1E293B; border-radius: 10px; overflow: auto; margin-bottom: 1.5rem; }
+    table { width: 100%; border-collapse: collapse; font-size: .82rem; }
+    th { background: #0F172A; padding: .65rem 1rem; text-align: left; color: #64748B; font-weight: 600; font-size: .7rem; text-transform: uppercase; letter-spacing: .04em; white-space: nowrap; }
+    td { padding: .65rem 1rem; border-top: 1px solid #1F3354; vertical-align: middle; }
+    tr:hover td { background: #0F172A2A; }
+    .total-row td { background: #0F172A; font-weight: bold; }
+
+    /* ── Badges ── */
+    .badge { display: inline-block; padding: .22rem .55rem; border-radius: 99px; font-size: .72rem; font-weight: 700; }
+    .b-aberto  { background: #F59E0B1A; color: #F59E0B; border: 1px solid #F59E0B33; }
+    .b-pago    { background: #10B9811A; color: #10B981; border: 1px solid #10B98133; }
+    .b-vencido { background: #EF44441A; color: #EF4444; border: 1px solid #EF444433; }
+    .p1 { background: #EF44441A; color: #EF4444; border: 1px solid #EF444433; }
+    .p2 { background: #F59E0B1A; color: #F59E0B; border: 1px solid #F59E0B33; }
+    .p3 { background: #6B72801A; color: #9CA3AF; border: 1px solid #6B728033; }
+
+    /* ── Add form ── */
+    .add-form { background: #1E293B; border-radius: 10px; padding: 1.25rem; margin-bottom: 1.5rem; }
+    .add-form h3 { margin-bottom: 1rem; font-size: .8rem; color: #64748B; text-transform: uppercase; letter-spacing: .06em; }
+    .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: .7rem; margin-bottom: .9rem; }
+    .form-group label { display: block; font-size: .72rem; color: #94A3B8; margin-bottom: .28rem; }
+
+    /* +/- valor buttons */
+    .vi-wrap { display: flex; gap: .28rem; align-items: center; }
+    .vi-wrap .inp { flex: 1; text-align: right; }
+    .vstep { padding: .38rem .55rem; background: #334155; border: 1px solid #475569; color: #F1F5F9; border-radius: 6px; cursor: pointer; font-size: .85rem; min-width: 32px; text-align: center; line-height: 1; font-family: Arial; }
+    .vstep:hover { background: #475569; }
+
+    /* ── Progress ── */
+    .prog-wrap { background: #0F172A; border-radius: 99px; height: 9px; overflow: hidden; }
+    .prog-bar  { height: 100%; border-radius: 99px; transition: width .4s; }
+    .pg  { background: #10B981; }
+    .py  { background: #F59E0B; }
+    .pr  { background: #EF4444; }
+
+    /* ── Meta card ── */
+    .meta-card { background: #1E293B; border-radius: 10px; padding: 1.2rem; margin-bottom: .9rem; }
+    .meta-hdr  { display: flex; justify-content: space-between; align-items: center; margin-bottom: .7rem; }
+    .meta-hdr h3 { font-size: .95rem; }
+    .meta-vals { display: flex; gap: 1.5rem; font-size: .8rem; color: #94A3B8; margin-bottom: .7rem; flex-wrap: wrap; }
+    .meta-vals span { color: #F1F5F9; font-weight: bold; }
+
+    /* ── Motor card ── */
+    .motor-card { background: #1E293B; border-radius: 10px; padding: 1.1rem; margin-bottom: .75rem; }
+
+    /* ── Alert ── */
+    .alert { padding: .7rem 1rem; border-radius: 8px; margin-bottom: .9rem; font-size: .82rem; }
+    .a-info    { background: #1D3760; border: 1px solid #2563EB44; color: #93C5FD; }
+    .a-success { background: #064E3B; border: 1px solid #10B98144; color: #6EE7B7; }
+    .a-danger  { background: #450A0A; border: 1px solid #EF444444; color: #FCA5A5; }
+    .a-warn    { background: #451A03; border: 1px solid #F59E0B44; color: #FCD34D; }
+
+    /* ── Config ── */
+    .cfg-section { background: #1E293B; border-radius: 10px; padding: 1.5rem; max-width: 400px; }
+    .cfg-section h3 { margin-bottom: 1rem; font-size: .95rem; }
+
+    /* ── Misc ── */
+    .loading { text-align: center; padding: 2rem; color: #64748B; }
+    .empty   { text-align: center; padding: 2rem; color: #64748B; font-size: .88rem; }
+    .sep     { border: none; border-top: 1px solid #334155; margin: 1rem 0; }
+
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: #0F172A; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+
+    @media (max-width: 700px) {
+      #sidebar { width: 180px; min-width: 180px; }
+      #content  { padding: 1rem; }
+      .cards    { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══ LOGIN ═══ -->
+<div id="login-page">
+  <div class="login-card">
+    <div style="font-size:2.8rem;margin-bottom:.4rem">💰</div>
+    <h1>Dashboard Financeiro</h1>
+    <p>Controle suas finanças com inteligência</p>
+    <input class="inp" id="inp-user" type="text" placeholder="Usuário" autocomplete="username"
+           onkeydown="if(event.key==='Enter')document.getElementById('inp-pass').focus()" />
+    <input class="inp" id="inp-pass" type="password" placeholder="Senha" autocomplete="current-password"
+           onkeydown="if(event.key==='Enter')doLogin()" />
+    <button class="btn btn-primary btn-block" id="btn-login" onclick="doLogin()">Entrar</button>
+    <div class="err" id="login-err"></div>
+  </div>
+</div>
+
+<!-- ═══ APP ═══ -->
+<div id="app" style="display:none">
+
+  <!-- Sidebar -->
+  <aside id="sidebar">
+    <div class="s-logo">💰 Financeiro</div>
+    <div class="s-user" id="s-user">–</div>
+    <nav>
+      <a class="nav-item active" data-p="dashboard"   onclick="showPage('dashboard')">📊 Dashboard</a>
+      <a class="nav-item"        data-p="lancamentos" onclick="showPage('lancamentos')">📋 Lançamentos</a>
+      <a class="nav-item"        data-p="depositos"   onclick="showPage('depositos')">💵 Depósitos</a>
+      <a class="nav-item"        data-p="metas"       onclick="showPage('metas')">🎯 Metas</a>
+      <a class="nav-item"        data-p="motor"       onclick="showPage('motor')">⚡ Motor de Decisão</a>
+      <a class="nav-item"        data-p="config"      onclick="showPage('config')">⚙️ Configurações</a>
+    </nav>
+
+    <div class="weekly-box">
+      <h4>📅 Semana Atual</h4>
+      <div id="weekly-content"><div style="color:#64748B;font-size:.75rem">Carregando…</div></div>
+    </div>
+
+    <div class="s-footer">
+      <button class="btn btn-secondary btn-block btn-sm" onclick="doLogout()">🚪 Sair</button>
+    </div>
+  </aside>
+
+  <!-- Content -->
+  <main id="content">
+
+    <!-- ── DASHBOARD ── -->
+    <div class="page active" id="page-dashboard">
+      <div class="ph">
+        <div class="ph-title">📊 Dashboard</div>
+        <div class="ph-right">
+          <select class="year-sel" id="dash-year"  onchange="loadDashboard()"></select>
+          <select class="year-sel" id="dash-month" onchange="loadDashboard()"></select>
+        </div>
+      </div>
+      <div class="cards">
+        <div class="card"><div class="card-lbl">Receitas</div><div class="card-val c-green" id="dc-rec">–</div></div>
+        <div class="card"><div class="card-lbl">Custos Totais</div><div class="card-val c-red"   id="dc-cus">–</div></div>
+        <div class="card"><div class="card-lbl">Saldo</div><div class="card-val"                 id="dc-sal">–</div></div>
+        <div class="card"><div class="card-lbl">Em Aberto</div><div class="card-val c-yel"       id="dc-abe">–</div></div>
+        <div class="card"><div class="card-lbl">Pagos</div><div class="card-val c-green"         id="dc-pag">–</div></div>
+        <div class="card"><div class="card-lbl">Vencidos</div><div class="card-val c-red"        id="dc-ven">–</div></div>
+      </div>
+      <div id="dash-alerts"></div>
+      <h3 style="font-size:.8rem;color:#64748B;text-transform:uppercase;letter-spacing:.05em;margin-bottom:.9rem">Lançamentos do Mês</h3>
+      <div class="tbl-wrap"><div id="dash-tbl"><div class="loading">Carregando…</div></div></div>
+    </div>
+
+    <!-- ── LANÇAMENTOS ── -->
+    <div class="page" id="page-lancamentos">
+      <div class="ph">
+        <div class="ph-title">📋 Lançamentos</div>
+        <select class="year-sel" id="lanc-year" onchange="loadLancamentos()"></select>
+      </div>
+      <div class="month-nav" id="lanc-months"></div>
+
+      <div class="add-form">
+        <h3>➕ Novo Lançamento</h3>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Data *</label>
+            <input class="inp" type="date" id="lanc-data" />
+          </div>
+          <div class="form-group" style="grid-column: span 2">
+            <label>Descrição *</label>
+            <input class="inp" type="text" id="lanc-desc" placeholder="Ex: Aluguel, Cartão Nubank…" />
+          </div>
+          <div class="form-group">
+            <label>Valor (R$) *</label>
+            <div class="vi-wrap">
+              <button class="vstep" onclick="vstep('lanc-val',-100)">−</button>
+              <input class="inp" type="number" id="lanc-val" placeholder="0.00" min="0" step="0.01" />
+              <button class="vstep" onclick="vstep('lanc-val',100)">+</button>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Peso *</label>
+            <select class="inp" id="lanc-peso">
+              <option value="1">⚡ 1 – Essencial</option>
+              <option value="2" selected>💳 2 – Financeiro</option>
+              <option value="3">📦 3 – Não Essencial</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Status</label>
+            <select class="inp" id="lanc-status">
+              <option value="Em Aberto" selected>Em Aberto</option>
+              <option value="Pago">Pago</option>
+              <option value="Vencido">Vencido</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Juros/Multa (%)</label>
+            <input class="inp" type="number" id="lanc-juros" placeholder="0.00" min="0" step="0.01" value="0" />
+          </div>
+        </div>
+        <div class="form-group" style="margin-bottom:.9rem">
+          <label>Observação</label>
+          <input class="inp" type="text" id="lanc-obs" placeholder="Opcional" />
+        </div>
+        <div id="lanc-err" class="err"></div>
+        <button class="btn btn-primary" onclick="addLancamento()">💾 Salvar Lançamento</button>
+      </div>
+
+      <div class="tbl-wrap"><div id="lanc-tbl"><div class="loading">Carregando…</div></div></div>
+    </div>
+
+    <!-- ── DEPÓSITOS ── -->
+    <div class="page" id="page-depositos">
+      <div class="ph">
+        <div class="ph-title">💵 Depósitos / Receitas</div>
+        <select class="year-sel" id="dep-year" onchange="loadDepositos()"></select>
+      </div>
+      <div class="month-nav" id="dep-months"></div>
+
+      <div class="add-form">
+        <h3>➕ Novo Depósito</h3>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Data *</label>
+            <input class="inp" type="date" id="dep-data" />
+          </div>
+          <div class="form-group">
+            <label>Valor (R$) *</label>
+            <div class="vi-wrap">
+              <button class="vstep" onclick="vstep('dep-val',-100)">−</button>
+              <input class="inp" type="number" id="dep-val" placeholder="0.00" min="0" step="0.01" />
+              <button class="vstep" onclick="vstep('dep-val',100)">+</button>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Descrição</label>
+            <input class="inp" type="text" id="dep-desc" placeholder="Ex: Salário, Freelance…" />
+          </div>
+        </div>
+        <div id="dep-err" class="err"></div>
+        <button class="btn btn-primary" onclick="addDeposito()">💾 Salvar Depósito</button>
+      </div>
+
+      <div class="tbl-wrap"><div id="dep-tbl"><div class="loading">Carregando…</div></div></div>
+    </div>
+
+    <!-- ── METAS ── -->
+    <div class="page" id="page-metas">
+      <div class="ph">
+        <div class="ph-title">🎯 Metas de Economia</div>
+        <select class="year-sel" id="meta-year" onchange="loadMetas()"></select>
+      </div>
+      <div id="meta-content"><div class="loading">Carregando…</div></div>
+    </div>
+
+    <!-- ── MOTOR DE DECISÃO ── -->
+    <div class="page" id="page-motor">
+      <div class="ph">
+        <div class="ph-title">⚡ Motor de Decisão</div>
+        <div class="ph-right">
+          <select class="year-sel" id="motor-year"  onchange="loadMotor()"></select>
+          <select class="year-sel" id="motor-month" onchange="loadMotor()"></select>
+        </div>
+      </div>
+      <div class="alert a-info" style="margin-bottom:1.2rem">
+        💡 <strong>Prioridade:</strong> Peso 1 – Essencial → Peso 2 por maior juros → Peso 3 – Não Essencial.<br>
+        Exibe apenas itens <em>Em Aberto</em>.
+      </div>
+      <div id="motor-content"><div class="loading">Calculando…</div></div>
+    </div>
+
+    <!-- ── CONFIGURAÇÕES ── -->
+    <div class="page" id="page-config">
+      <div class="ph-title" style="margin-bottom:1.5rem">⚙️ Configurações</div>
+      <div class="cfg-section">
+        <h3>🔑 Alterar Senha</h3>
+        <div class="form-group" style="margin-bottom:.9rem">
+          <label>Senha Atual</label>
+          <input class="inp" type="password" id="cfg-old" placeholder="Senha atual" />
+        </div>
+        <div class="form-group" style="margin-bottom:.9rem">
+          <label>Nova Senha</label>
+          <input class="inp" type="password" id="cfg-new" placeholder="Nova senha" />
+        </div>
+        <div class="form-group" style="margin-bottom:.9rem">
+          <label>Confirmar Nova Senha</label>
+          <input class="inp" type="password" id="cfg-conf" placeholder="Repita a nova senha" />
+        </div>
+        <div id="cfg-msg"></div>
+        <button class="btn btn-primary" onclick="changePassword()">Salvar Senha</button>
+      </div>
+    </div>
+
+  </main>
+</div><!-- #app -->
+
+<script>
+// ═══════════════════════════════════════════════════
+// SUPABASE
+// ═══════════════════════════════════════════════════
+const SUPA_URL = 'https://fturzslaaaroimsuzrge.supabase.co';
+const SUPA_KEY = 'sb_publishable_vXAHZ0y-U6tSnh2RrzXUUQ_R5Nkk8G7';
+const sb = supabase.createClient(SUPA_URL, SUPA_KEY);
+
+// ═══════════════════════════════════════════════════
+// GLOBALS
+// ═══════════════════════════════════════════════════
+const MESES      = ['','Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+const MESES_ABBR = ['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+const PESO_LBL   = {1:'⚡ Essencial', 2:'💳 Financeiro', 3:'📦 Não Essencial'};
+
+let currentUser   = null;
+let activeLancMes = new Date().getMonth() + 1;
+let activeDepMes  = new Date().getMonth() + 1;
+let delPending    = {};   // { 'l<id>': true } or { 'd<id>': true }
+
+// ═══════════════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════════════
+async function sha256(str) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+function fmtBRL(v) {
+  return 'R$ ' + Number(v||0).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
+}
+function fmtDate(d) {
+  if (!d) return '–';
+  const [y,m,day] = d.split('-');
+  return `${day}/${m}/${y}`;
+}
+function monthRange(year, month) {
+  const m   = String(month).padStart(2,'0');
+  const last = new Date(year, month, 0).getDate();
+  return { start: `${year}-${m}-01`, end: `${year}-${m}-${String(last).padStart(2,'0')}` };
+}
+function weekRange() {
+  const now = new Date();
+  const sun = new Date(now); sun.setDate(now.getDate() - now.getDay()); sun.setHours(0,0,0,0);
+  const sat = new Date(sun); sat.setDate(sun.getDate() + 6);
+  return { start: sun.toISOString().slice(0,10), end: sat.toISOString().slice(0,10) };
+}
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function vstep(id, delta) {
+  const el = document.getElementById(id);
+  el.value = Math.max(0, (parseFloat(el.value)||0) + delta).toFixed(2);
+}
+function statusBadge(s) {
+  if (s==='Pago')    return `<span class="badge b-pago">Pago</span>`;
+  if (s==='Vencido') return `<span class="badge b-vencido">Vencido</span>`;
+  return `<span class="badge b-aberto">Em Aberto</span>`;
+}
+function pesoBadge(p) {
+  return `<span class="badge p${p}">${PESO_LBL[p]||p}</span>`;
+}
+
+// ─── Year / month selectors ───
+function fillYearSel(id) {
+  const el  = document.getElementById(id);
+  const cur = new Date().getFullYear();
+  el.innerHTML = '';
+  for (let y = cur+1; y >= cur-3; y--) {
+    const o = document.createElement('option');
+    o.value = y; o.textContent = y;
+    if (y === cur) o.selected = true;
+    el.appendChild(o);
+  }
+}
+function fillMonthSel(id) {
+  const el  = document.getElementById(id);
+  const cur = new Date().getMonth()+1;
+  el.innerHTML = '';
+  for (let m = 1; m <= 12; m++) {
+    const o = document.createElement('option');
+    o.value = m; o.textContent = MESES[m];
+    if (m === cur) o.selected = true;
+    el.appendChild(o);
+  }
+}
+function buildMonthTabs(containerId, active, callback) {
+  const el = document.getElementById(containerId);
+  el.innerHTML = '';
+  for (let m = 1; m <= 12; m++) {
+    const tab = document.createElement('div');
+    tab.className = 'month-tab' + (m === active ? ' active' : '');
+    tab.textContent = MESES_ABBR[m];
+    tab.onclick = () => {
+      el.querySelectorAll('.month-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      callback(m);
+    };
+    el.appendChild(tab);
+  }
+}
+
+// ═══════════════════════════════════════════════════
+// AUTH
+// ═══════════════════════════════════════════════════
+async function doLogin() {
+  const username = document.getElementById('inp-user').value.trim();
+  const password = document.getElementById('inp-pass').value;
+  const errEl    = document.getElementById('login-err');
+  const btnEl    = document.getElementById('btn-login');
+  errEl.textContent = '';
+  if (!username || !password) { errEl.textContent = 'Preencha usuário e senha.'; return; }
+  btnEl.textContent = 'Entrando…'; btnEl.disabled = true;
+  try {
+    const hash = await sha256(password);
+    const { data, error } = await sb.from('users').select('*').eq('username', username).eq('password_hash', hash).single();
+    if (error || !data) { errEl.textContent = 'Usuário ou senha incorretos.'; return; }
+    currentUser = data.username;
+    sessionStorage.setItem('fin_user', currentUser);
+    document.getElementById('login-page').style.display  = 'none';
+    document.getElementById('app').style.display         = 'flex';
+    document.getElementById('s-user').textContent        = '👤 ' + currentUser;
+    initApp();
+  } catch(e) {
+    errEl.textContent = 'Erro de conexão: ' + e.message;
+  } finally {
+    btnEl.textContent = 'Entrar'; btnEl.disabled = false;
+  }
+}
+
+function doLogout() {
+  currentUser = null;
+  sessionStorage.removeItem('fin_user');
+  document.getElementById('app').style.display         = 'none';
+  document.getElementById('login-page').style.display  = 'flex';
+  document.getElementById('inp-pass').value            = '';
+  document.getElementById('login-err').textContent     = '';
+}
+
+async function checkSession() {
+  const u = sessionStorage.getItem('fin_user');
+  if (u) {
+    const { data } = await sb.from('users').select('username').eq('username', u).single();
+    if (data) {
+      currentUser = data.username;
+      document.getElementById('login-page').style.display = 'none';
+      document.getElementById('app').style.display        = 'flex';
+      document.getElementById('s-user').textContent       = '👤 ' + currentUser;
+      initApp();
+      return;
+    }
+  }
+  document.getElementById('login-page').style.display = 'flex';
+}
+
+// ═══════════════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════════════
+function showPage(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(a => a.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  const nav = document.querySelector(`.nav-item[data-p="${page}"]`);
+  if (nav) nav.classList.add('active');
+  delPending = {};
+  if (page === 'dashboard')   loadDashboard();
+  if (page === 'lancamentos') loadLancamentos();
+  if (page === 'depositos')   loadDepositos();
+  if (page === 'metas')       loadMetas();
+  if (page === 'motor')       loadMotor();
+}
+
+// ═══════════════════════════════════════════════════
+// WEEKLY REPORT
+// ═══════════════════════════════════════════════════
+async function loadWeeklyReport() {
+  const { start, end } = weekRange();
+  const [rL, rD] = await Promise.all([
+    sb.from('lancamentos').select('valor,status').eq('username', currentUser).gte('data', start).lte('data', end),
+    sb.from('depositos').select('valor').eq('username', currentUser).gte('data', start).lte('data', end)
+  ]);
+  const lancs  = rL.data || [];
+  const deps   = rD.data || [];
+  const custo  = lancs.reduce((s,l) => s + Number(l.valor), 0);
+  const aberto = lancs.filter(l => l.status==='Em Aberto').reduce((s,l) => s + Number(l.valor), 0);
+  const rec    = deps.reduce((s,d) => s + Number(d.valor), 0);
+  const saldo  = rec - custo;
+  document.getElementById('weekly-content').innerHTML = `
+    <div style="color:#64748B;font-size:.7rem;margin-bottom:.5rem">${fmtDate(start)} – ${fmtDate(end)}</div>
+    <div class="weekly-row"><span class="lbl">Receitas:</span><span class="c-green">${fmtBRL(rec)}</span></div>
+    <div class="weekly-row"><span class="lbl">Custos:</span><span class="c-red">${fmtBRL(custo)}</span></div>
+    <div class="weekly-row"><span class="lbl">Em Aberto:</span><span class="c-yel">${fmtBRL(aberto)}</span></div>
+    <div class="weekly-row" style="border-top:1px solid #1F3354;margin-top:.4rem;padding-top:.4rem">
+      <span class="lbl">Saldo:</span>
+      <span class="${saldo>=0?'c-green':'c-red'}">${fmtBRL(saldo)}</span>
+    </div>`;
+}
+
+// ═══════════════════════════════════════════════════
+// DASHBOARD
+// ═══════════════════════════════════════════════════
+async function loadDashboard() {
+  const year  = parseInt(document.getElementById('dash-year').value);
+  const month = parseInt(document.getElementById('dash-month').value);
+  const { start, end } = monthRange(year, month);
+
+  const [rL, rD] = await Promise.all([
+    sb.from('lancamentos').select('*').eq('username', currentUser).gte('data', start).lte('data', end).order('data'),
+    sb.from('depositos').select('*').eq('username', currentUser).gte('data', start).lte('data', end)
+  ]);
+  const lancs = rL.data || [];
+  const deps  = rD.data || [];
+
+  const receitas = deps.reduce((s,d) => s + Number(d.valor), 0);
+  const custos   = lancs.reduce((s,l) => s + Number(l.valor), 0);
+  const saldo    = receitas - custos;
+  const aberto   = lancs.filter(l=>l.status==='Em Aberto').reduce((s,l)=>s+Number(l.valor),0);
+  const pagos    = lancs.filter(l=>l.status==='Pago').reduce((s,l)=>s+Number(l.valor),0);
+  const vencidos = lancs.filter(l=>l.status==='Vencido').reduce((s,l)=>s+Number(l.valor),0);
+
+  document.getElementById('dc-rec').textContent = fmtBRL(receitas);
+  document.getElementById('dc-cus').textContent = fmtBRL(custos);
+  const salEl = document.getElementById('dc-sal');
+  salEl.textContent = fmtBRL(saldo);
+  salEl.className   = 'card-val ' + (saldo >= 0 ? 'c-green' : 'c-red');
+  document.getElementById('dc-abe').textContent = fmtBRL(aberto);
+  document.getElementById('dc-pag').textContent = fmtBRL(pagos);
+  document.getElementById('dc-ven').textContent = fmtBRL(vencidos);
+
+  let alerts = '';
+  if (vencidos > 0) alerts += `<div class="alert a-danger">⚠️ <strong>${fmtBRL(vencidos)}</strong> em lançamentos vencidos neste mês.</div>`;
+  if (saldo < 0)    alerts += `<div class="alert a-danger">🔴 Saldo negativo: gastos superam receitas em <strong>${fmtBRL(-saldo)}</strong>.</div>`;
+  else if (receitas > 0 && saldo < receitas * 0.1) alerts += `<div class="alert a-warn">🟡 Saldo abaixo de 10% das receitas. Atenção!</div>`;
+  document.getElementById('dash-alerts').innerHTML = alerts;
+
+  if (lancs.length === 0) {
+    document.getElementById('dash-tbl').innerHTML = '<div class="empty">Nenhum lançamento neste mês.</div>';
+    return;
+  }
+  let html = `<table><thead><tr><th>Data</th><th>Descrição</th><th>Peso</th><th>Valor</th><th>Status</th></tr></thead><tbody>`;
+  for (const l of lancs) {
+    html += `<tr><td>${fmtDate(l.data)}</td><td>${esc(l.descricao)}</td><td>${pesoBadge(l.peso)}</td><td>${fmtBRL(l.valor)}</td><td>${statusBadge(l.status)}</td></tr>`;
+  }
+  html += '</tbody></table>';
+  document.getElementById('dash-tbl').innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════════
+// LANÇAMENTOS
+// ═══════════════════════════════════════════════════
+async function loadLancamentos() {
+  const year = parseInt(document.getElementById('lanc-year').value);
+  buildMonthTabs('lanc-months', activeLancMes, m => { activeLancMes = m; loadLancamentos(); });
+  const { start, end } = monthRange(year, activeLancMes);
+
+  const { data, error } = await sb.from('lancamentos').select('*')
+    .eq('username', currentUser).gte('data', start).lte('data', end)
+    .order('data').order('id');
+
+  if (error) { document.getElementById('lanc-tbl').innerHTML = `<div class="empty">Erro: ${esc(error.message)}</div>`; return; }
+  const lancs = data || [];
+
+  if (lancs.length === 0) {
+    document.getElementById('lanc-tbl').innerHTML = '<div class="empty">Nenhum lançamento neste mês. Adicione acima ⬆️</div>';
+    return;
+  }
+
+  let html = `<table><thead><tr><th>Data</th><th>Descrição</th><th>Peso</th><th>Valor</th><th>Juros%</th><th>Status</th><th>Obs</th><th>Ações</th></tr></thead><tbody>`;
+  for (const l of lancs) {
+    const stSel = `<select class="inp" style="padding:.3rem .5rem;font-size:.75rem;width:108px" onchange="updLancStatus(${l.id},this.value)">
+      <option${l.status==='Em Aberto'?' selected':''}>Em Aberto</option>
+      <option${l.status==='Pago'?' selected':''}>Pago</option>
+      <option${l.status==='Vencido'?' selected':''}>Vencido</option>
+    </select>`;
+    const key = 'l'+l.id;
+    const del = delPending[key]
+      ? `<span style="display:flex;gap:.3rem">
+           <button class="btn btn-danger  btn-sm" onclick="confirmDel('l',${l.id})">✓ Confirmar</button>
+           <button class="btn btn-secondary btn-sm" onclick="cancelDel('l${l.id}')">✗</button>
+         </span>`
+      : `<button class="btn btn-secondary btn-sm" onclick="reqDel('l${l.id}')">🗑️</button>`;
+    html += `<tr>
+      <td>${fmtDate(l.data)}</td>
+      <td>${esc(l.descricao)}</td>
+      <td>${pesoBadge(l.peso)}</td>
+      <td style="white-space:nowrap">${fmtBRL(l.valor)}</td>
+      <td>${Number(l.juros_multa||0).toFixed(1)}%</td>
+      <td>${stSel}</td>
+      <td style="max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(l.obs||'')}">${esc(l.obs||'–')}</td>
+      <td>${del}</td>
+    </tr>`;
+  }
+  html += '</tbody></table>';
+  document.getElementById('lanc-tbl').innerHTML = html;
+}
+
+async function addLancamento() {
+  const err  = document.getElementById('lanc-err');
+  err.textContent = '';
+  const data   = document.getElementById('lanc-data').value;
+  const desc   = document.getElementById('lanc-desc').value.trim();
+  const valor  = parseFloat(document.getElementById('lanc-val').value);
+  const peso   = parseInt(document.getElementById('lanc-peso').value);
+  const status = document.getElementById('lanc-status').value;
+  const juros  = parseFloat(document.getElementById('lanc-juros').value)||0;
+  const obs    = document.getElementById('lanc-obs').value.trim();
+
+  if (!data)               { err.textContent = 'Data obrigatória.';            return; }
+  if (!desc)               { err.textContent = 'Descrição obrigatória.';       return; }
+  if (!valor || valor <= 0){ err.textContent = 'Valor deve ser maior que zero.'; return; }
+
+  const id = Date.now() + Math.floor(Math.random()*1000);
+  const { error } = await sb.from('lancamentos').insert({id, username:currentUser, data, descricao:desc, valor, peso, status, juros_multa:juros, obs});
+  if (error) { err.textContent = 'Erro ao salvar: ' + error.message; return; }
+
+  ['lanc-data','lanc-desc','lanc-val','lanc-obs'].forEach(i => { document.getElementById(i).value = ''; });
+  document.getElementById('lanc-juros').value  = '0';
+  document.getElementById('lanc-peso').value   = '2';
+  document.getElementById('lanc-status').value = 'Em Aberto';
+  document.getElementById('lanc-data').value   = new Date().toISOString().slice(0,10);
+
+  activeLancMes = parseInt(data.split('-')[1]);
+  loadLancamentos();
+  loadWeeklyReport();
+}
+
+async function updLancStatus(id, newStatus) {
+  await sb.from('lancamentos').update({status:newStatus}).eq('id',id).eq('username',currentUser);
+  loadWeeklyReport();
+  // refresh dashboard cards silently if it's visible
+  if (document.getElementById('page-dashboard').classList.contains('active')) loadDashboard();
+}
+
+// ═══════════════════════════════════════════════════
+// DEPÓSITOS
+// ═══════════════════════════════════════════════════
+async function loadDepositos() {
+  const year = parseInt(document.getElementById('dep-year').value);
+  buildMonthTabs('dep-months', activeDepMes, m => { activeDepMes = m; loadDepositos(); });
+  const { start, end } = monthRange(year, activeDepMes);
+
+  const { data, error } = await sb.from('depositos').select('*')
+    .eq('username', currentUser).gte('data', start).lte('data', end)
+    .order('data').order('id');
+
+  if (error) { document.getElementById('dep-tbl').innerHTML = `<div class="empty">Erro: ${esc(error.message)}</div>`; return; }
+  const deps  = data || [];
+  const total = deps.reduce((s,d) => s + Number(d.valor), 0);
+
+  if (deps.length === 0) {
+    document.getElementById('dep-tbl').innerHTML = '<div class="empty">Nenhum depósito neste mês. Adicione acima ⬆️</div>';
+    return;
+  }
+
+  let html = `<table><thead><tr><th>Data</th><th>Descrição</th><th>Valor</th><th>Ações</th></tr></thead><tbody>`;
+  for (const d of deps) {
+    const key = 'd'+d.id;
+    const del = delPending[key]
+      ? `<span style="display:flex;gap:.3rem">
+           <button class="btn btn-danger   btn-sm" onclick="confirmDel('d',${d.id})">✓ Confirmar</button>
+           <button class="btn btn-secondary btn-sm" onclick="cancelDel('d${d.id}')">✗</button>
+         </span>`
+      : `<button class="btn btn-secondary btn-sm" onclick="reqDel('d${d.id}')">🗑️</button>`;
+    html += `<tr><td>${fmtDate(d.data)}</td><td>${esc(d.descricao||'–')}</td><td class="c-green" style="font-weight:600">${fmtBRL(d.valor)}</td><td>${del}</td></tr>`;
+  }
+  html += `<tr class="total-row"><td colspan="2">Total</td><td class="c-green">${fmtBRL(total)}</td><td></td></tr>`;
+  html += '</tbody></table>';
+  document.getElementById('dep-tbl').innerHTML = html;
+}
+
+async function addDeposito() {
+  const err   = document.getElementById('dep-err');
+  err.textContent = '';
+  const data  = document.getElementById('dep-data').value;
+  const valor = parseFloat(document.getElementById('dep-val').value);
+  const desc  = document.getElementById('dep-desc').value.trim();
+
+  if (!data)               { err.textContent = 'Data obrigatória.';             return; }
+  if (!valor || valor <= 0){ err.textContent = 'Valor deve ser maior que zero.'; return; }
+
+  const id = Date.now() + Math.floor(Math.random()*1000);
+  const { error } = await sb.from('depositos').insert({id, username:currentUser, data, valor, descricao:desc});
+  if (error) { err.textContent = 'Erro ao salvar: ' + error.message; return; }
+
+  document.getElementById('dep-data').value  = new Date().toISOString().slice(0,10);
+  document.getElementById('dep-val').value   = '';
+  document.getElementById('dep-desc').value  = '';
+
+  activeDepMes = parseInt(data.split('-')[1]);
+  loadDepositos();
+  loadWeeklyReport();
+}
+
+// ═══════════════════════════════════════════════════
+// DELETE (double-confirm)
+// ═══════════════════════════════════════════════════
+function reqDel(key) {
+  delPending[key] = true;
+  if (key.startsWith('l')) loadLancamentos();
+  else                     loadDepositos();
+}
+function cancelDel(key) {
+  delete delPending[key];
+  if (key.startsWith('l')) loadLancamentos();
+  else                     loadDepositos();
+}
+async function confirmDel(type, id) {
+  const key = type + id;
+  if (type === 'l') {
+    await sb.from('lancamentos').delete().eq('id', id).eq('username', currentUser);
+    delete delPending[key];
+    loadLancamentos();
+  } else {
+    await sb.from('depositos').delete().eq('id', id).eq('username', currentUser);
+    delete delPending[key];
+    loadDepositos();
+  }
+  loadWeeklyReport();
+}
+
+// ═══════════════════════════════════════════════════
+// METAS
+// ═══════════════════════════════════════════════════
+async function loadMetas() {
+  const year = parseInt(document.getElementById('meta-year').value);
+  const cont = document.getElementById('meta-content');
+  cont.innerHTML = '<div class="loading">Carregando…</div>';
+
+  const { data } = await sb.from('metas').select('*').eq('username', currentUser).like('ano_mes', year + '-%');
+  const map = {};
+  (data||[]).forEach(r => { map[r.ano_mes] = r; });
+
+  let html = '';
+  for (let m = 1; m <= 12; m++) {
+    const am     = `${year}-${String(m).padStart(2,'0')}`;
+    const rec    = map[am] || { ano_mes: am, meta: 0, guardado: 0 };
+    const meta   = Number(rec.meta||0);
+    const guard  = Number(rec.guardado||0);
+    const pct    = meta > 0 ? Math.min(100, (guard/meta)*100) : 0;
+    const pcls   = pct >= 100 ? 'pg' : pct >= 50 ? 'py' : 'pr';
+    const pcol   = pct >= 100 ? '#10B981' : pct >= 50 ? '#F59E0B' : '#EF4444';
+    html += `
+      <div class="meta-card">
+        <div class="meta-hdr">
+          <h3>${MESES[m]} ${year}</h3>
+          <span style="color:${pcol};font-weight:bold">${pct.toFixed(0)}%</span>
+        </div>
+        <div class="meta-vals">
+          <div>Meta: <span>${fmtBRL(meta)}</span></div>
+          <div>Guardado: <span>${fmtBRL(guard)}</span></div>
+          <div>Restante: <span>${fmtBRL(Math.max(0, meta-guard))}</span></div>
+        </div>
+        <div class="prog-wrap" style="margin-bottom:.9rem">
+          <div class="prog-bar ${pcls}" style="width:${pct}%"></div>
+        </div>
+        <div style="display:flex;gap:.75rem;align-items:flex-end;flex-wrap:wrap">
+          <div>
+            <label style="font-size:.72rem;color:#94A3B8;display:block;margin-bottom:.25rem">Meta (R$)</label>
+            <div class="vi-wrap">
+              <button class="vstep" onclick="vstepMeta('${am}','m',-100)">−</button>
+              <input class="inp" type="number" id="mv-${am}" value="${meta}" min="0" step="0.01" style="width:115px;text-align:right" />
+              <button class="vstep" onclick="vstepMeta('${am}','m',100)">+</button>
+            </div>
+          </div>
+          <div>
+            <label style="font-size:.72rem;color:#94A3B8;display:block;margin-bottom:.25rem">Guardado (R$)</label>
+            <div class="vi-wrap">
+              <button class="vstep" onclick="vstepMeta('${am}','g',-100)">−</button>
+              <input class="inp" type="number" id="gv-${am}" value="${guard}" min="0" step="0.01" style="width:115px;text-align:right" />
+              <button class="vstep" onclick="vstepMeta('${am}','g',100)">+</button>
+            </div>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="saveMeta('${am}')">💾 Salvar</button>
+        </div>
+      </div>`;
+  }
+  cont.innerHTML = html;
+}
+
+function vstepMeta(am, field, delta) {
+  const id = field === 'm' ? `mv-${am}` : `gv-${am}`;
+  const el = document.getElementById(id);
+  el.value = Math.max(0, (parseFloat(el.value)||0) + delta).toFixed(2);
+}
+
+async function saveMeta(am) {
+  const meta    = parseFloat(document.getElementById(`mv-${am}`).value)||0;
+  const guardado = parseFloat(document.getElementById(`gv-${am}`).value)||0;
+  const { error } = await sb.from('metas')
+    .upsert({username:currentUser, ano_mes:am, meta, guardado}, {onConflict:'username,ano_mes'});
+  if (error) { alert('Erro ao salvar: ' + error.message); return; }
+  loadMetas();
+}
+
+// ═══════════════════════════════════════════════════
+// MOTOR DE DECISÃO
+// ═══════════════════════════════════════════════════
+async function loadMotor() {
+  const year  = parseInt(document.getElementById('motor-year').value);
+  const month = parseInt(document.getElementById('motor-month').value);
+  const { start, end } = monthRange(year, month);
+  const cont = document.getElementById('motor-content');
+  cont.innerHTML = '<div class="loading">Calculando prioridades…</div>';
+
+  const { data, error } = await sb.from('lancamentos').select('*')
+    .eq('username', currentUser).eq('status', 'Em Aberto')
+    .gte('data', start).lte('data', end);
+
+  if (error) { cont.innerHTML = `<div class="empty">Erro: ${esc(error.message)}</div>`; return; }
+  const lancs = data || [];
+
+  if (lancs.length === 0) {
+    cont.innerHTML = '<div class="empty">✅ Nenhum lançamento em aberto neste mês. Ótimo!</div>';
+    return;
+  }
+
+  // Sort: peso asc → juros desc (within same peso)
+  const sorted = [...lancs].sort((a, b) => {
+    if (a.peso !== b.peso) return a.peso - b.peso;
+    return Number(b.juros_multa||0) - Number(a.juros_multa||0);
+  });
+
+  const total = sorted.reduce((s,l) => s + Number(l.valor), 0);
+  let html = `<div style="margin-bottom:1rem;color:#94A3B8;font-size:.82rem">${sorted.length} item(s) em aberto — Total pendente: <strong class="c-yel">${fmtBRL(total)}</strong></div>`;
+
+  sorted.forEach((l, i) => {
+    const border = l.peso===1 ? '#EF4444' : l.peso===2 ? '#F59E0B' : '#6B7280';
+    const bg     = l.peso===1 ? '#EF4444' : l.peso===2 ? '#F59E0B' : '#6B7280';
+    html += `
+      <div class="motor-card" style="border-left:3px solid ${border}">
+        <div style="display:flex;align-items:flex-start;gap:.75rem">
+          <div style="min-width:28px;height:28px;border-radius:50%;background:${bg};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:.8rem;flex-shrink:0">${i+1}</div>
+          <div style="flex:1">
+            <div style="font-weight:bold;margin-bottom:.3rem">${esc(l.descricao)}</div>
+            <div style="display:flex;gap:.9rem;flex-wrap:wrap;font-size:.78rem;color:#94A3B8;align-items:center">
+              <span>📅 ${fmtDate(l.data)}</span>
+              <span>💰 <strong>${fmtBRL(l.valor)}</strong></span>
+              ${pesoBadge(l.peso)}
+              ${Number(l.juros_multa||0) > 0 ? `<span class="c-red">⚠️ ${Number(l.juros_multa).toFixed(1)}% juros</span>` : ''}
+            </div>
+            ${l.obs ? `<div style="font-size:.75rem;color:#64748B;margin-top:.3rem">📝 ${esc(l.obs)}</div>` : ''}
+          </div>
+        </div>
+      </div>`;
+  });
+  cont.innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════════
+// CONFIGURAÇÕES
+// ═══════════════════════════════════════════════════
+async function changePassword() {
+  const oldPass = document.getElementById('cfg-old').value;
+  const newPass = document.getElementById('cfg-new').value;
+  const confirm = document.getElementById('cfg-conf').value;
+  const msgEl   = document.getElementById('cfg-msg');
+  msgEl.innerHTML = '';
+
+  if (!oldPass || !newPass || !confirm) { msgEl.innerHTML = '<div class="err">Preencha todos os campos.</div>'; return; }
+  if (newPass !== confirm)              { msgEl.innerHTML = '<div class="err">Nova senha e confirmação não coincidem.</div>'; return; }
+  if (newPass.length < 4)              { msgEl.innerHTML = '<div class="err">Senha deve ter pelo menos 4 caracteres.</div>'; return; }
+
+  const oldHash = await sha256(oldPass);
+  const { data } = await sb.from('users').select('id').eq('username', currentUser).eq('password_hash', oldHash).single();
+  if (!data) { msgEl.innerHTML = '<div class="err">Senha atual incorreta.</div>'; return; }
+
+  const newHash = await sha256(newPass);
+  const { error } = await sb.from('users').update({password_hash: newHash}).eq('username', currentUser);
+  if (error) { msgEl.innerHTML = `<div class="err">Erro: ${error.message}</div>`; return; }
+
+  msgEl.innerHTML = '<div class="alert a-success">✅ Senha alterada com sucesso!</div>';
+  ['cfg-old','cfg-new','cfg-conf'].forEach(id => { document.getElementById(id).value = ''; });
+}
+
+// ═══════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════
+function initApp() {
+  const mo = new Date().getMonth() + 1;
+  ['dash-year','lanc-year','dep-year','meta-year','motor-year'].forEach(fillYearSel);
+  ['dash-month','motor-month'].forEach(fillMonthSel);
+  activeLancMes = mo;
+  activeDepMes  = mo;
+  loadDashboard();
+  loadWeeklyReport();
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  const today = new Date().toISOString().slice(0,10);
+  document.getElementById('lanc-data').value = today;
+  document.getElementById('dep-data').value  = today;
+  checkSession();
+});
+</script>
+</body>
+</html>
