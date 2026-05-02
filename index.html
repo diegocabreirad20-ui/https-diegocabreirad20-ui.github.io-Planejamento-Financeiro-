@@ -102,7 +102,7 @@ textarea.inp{resize:vertical;min-height:60px}
 /* CHART CONTAINER */
 .chart-wrap{background:var(--bg2);border-radius:10px;padding:1.1rem;margin-bottom:1.5rem}
 .chart-wrap h3{font-size:.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.9rem}
-.chart-canvas{height:200px;position:relative}
+.chart-canvas{height:280px;position:relative}
 
 /* MONTH TABS */
 .month-nav{display:flex;gap:.32rem;overflow-x:auto;margin-bottom:1.35rem;padding-bottom:.25rem}
@@ -125,9 +125,9 @@ tr:hover td{background:rgba(0,0,0,.06)}
 .b-ab{background:rgba(245,158,11,.12);color:var(--yel);border:1px solid rgba(245,158,11,.3)}
 .b-pg{background:rgba(16,185,129,.12);color:var(--green);border:1px solid rgba(16,185,129,.3)}
 .b-vn{background:rgba(239,68,68,.12);color:var(--red);border:1px solid rgba(239,68,68,.3)}
-.p1{background:rgba(239,68,68,.12);color:var(--red);border:1px solid rgba(239,68,68,.3)}
-.p2{background:rgba(245,158,11,.12);color:var(--yel);border:1px solid rgba(245,158,11,.3)}
-.p3{background:rgba(107,114,128,.12);color:#9CA3AF;border:1px solid rgba(107,114,128,.3)}
+.p1{background:rgba(239,68,68,.22);color:#FF6B6B;border:1px solid rgba(239,68,68,.6);font-weight:700}
+.p2{background:rgba(245,158,11,.22);color:#FBBF24;border:1px solid rgba(245,158,11,.6);font-weight:700}
+.p3{background:rgba(99,179,237,.15);color:#63B3ED;border:1px solid rgba(99,179,237,.5);font-weight:700}
 
 /* FORM */
 .add-form{background:var(--bg2);border-radius:10px;padding:1.2rem;margin-bottom:1.4rem}
@@ -245,9 +245,10 @@ tr:hover td{background:rgba(0,0,0,.06)}
   <nav>
     <a class="nav-item active" data-p="dashboard"   onclick="showPage('dashboard')">📊 Dashboard</a>
     <a class="nav-item"        data-p="lancamentos" onclick="showPage('lancamentos')">📋 Lançamentos</a>
-    <a class="nav-item"        data-p="depositos"   onclick="showPage('depositos')">💵 Depósitos</a>
+    <a class="nav-item"        data-p="depositos"   onclick="showPage('depositos')">💵 Entradas</a>
     <a class="nav-item"        data-p="metas"       onclick="showPage('metas')">🎯 Metas</a>
     <a class="nav-item"        data-p="motor"       onclick="showPage('motor')">⚡ Motor de Decisão</a>
+    <a class="nav-item"        data-p="pensao"      onclick="showPage('pensao')">💙 Extrato Pensão</a>
     <a class="nav-item"        data-p="config"      onclick="showPage('config')">⚙️ Configurações</a>
   </nav>
   <div class="ai-box">
@@ -271,8 +272,8 @@ tr:hover td{background:rgba(0,0,0,.06)}
   <div class="ph">
     <div class="ph-title">📊 Dashboard</div>
     <div class="ph-right">
-      <select class="yr-sel" id="dash-year" onchange="loadDashboard()"></select>
-      <select class="yr-sel" id="dash-month" onchange="loadDashboard()"></select>
+      <select class="yr-sel" id="dash-year" onchange="syncAndLoad()"></select>
+      <select class="yr-sel" id="dash-month" onchange="syncAndLoad()"></select>
     </div>
   </div>
   <div class="cards">
@@ -317,19 +318,19 @@ tr:hover td{background:rgba(0,0,0,.06)}
 <!-- ── DEPÓSITOS ── -->
 <div class="page" id="page-depositos">
   <div class="ph">
-    <div class="ph-title">💵 Depósitos / Receitas</div>
+    <div class="ph-title">💵 Entradas / Receitas</div>
     <select class="yr-sel" id="dep-year" onchange="loadDepositos()"></select>
   </div>
   <div class="month-nav" id="dep-months"></div>
   <div class="add-form">
-    <h3>➕ Novo Depósito</h3>
+    <h3>➕ Nova Entrada</h3>
     <div class="form-row">
       <div class="fg"><label>Data *</label><input class="inp" type="date" id="dep-data"/></div>
       <div class="fg"><label>Valor (R$) *</label><div class="vi"><button class="vs" onclick="vstep('dep-val',-100)">−</button><input class="inp" type="number" id="dep-val" placeholder="0.00" min="0" step="0.01"/><button class="vs" onclick="vstep('dep-val',100)">+</button></div></div>
       <div class="fg"><label>Descrição</label><input class="inp" type="text" id="dep-desc" placeholder="Ex: Salário, Freelance…"/></div>
     </div>
     <div class="err" id="dep-err"></div>
-    <button class="btn btn-pri" onclick="addDeposito()">💾 Salvar Depósito</button>
+    <button class="btn btn-pri" onclick="addDeposito()">💾 Salvar Entrada</button>
   </div>
   <div class="tbl-wrap"><div id="dep-tbl"><div class="loading">Carregando…</div></div></div>
 </div>
@@ -352,7 +353,7 @@ tr:hover td{background:rgba(0,0,0,.06)}
       <select class="yr-sel" id="motor-month" onchange="loadMotor()"></select>
     </div>
   </div>
-  <div class="alert a-info" style="margin-bottom:1.2rem">💡 <strong>Prioridade:</strong> Peso 1 – Essencial → Peso 2 por maior juros → Peso 3. Apenas itens <em>Em Aberto</em>.</div>
+  <div class="alert a-info" style="margin-bottom:1.2rem">💡 <strong>Prioridade:</strong> Peso 1 – Essencial &gt; Peso 2 – Financeiro &gt; Peso 3 – Não Essencial. Apenas itens <em>Em Aberto</em>.</div>
   <div id="motor-content"><div class="loading">Calculando…</div></div>
 </div>
 
@@ -371,10 +372,11 @@ tr:hover td{background:rgba(0,0,0,.06)}
   <div class="cfg-card">
     <h3>🔠 Tamanho da Fonte</h3>
     <div class="fs-btns">
-      <button class="fs-btn" onclick="setFs(12)">Pequena</button>
-      <button class="fs-btn active" id="fs-14" onclick="setFs(14)">Normal</button>
-      <button class="fs-btn" onclick="setFs(16)">Grande</button>
-      <button class="fs-btn" onclick="setFs(18)">Muito Grande</button>
+      <button class="fs-btn" onclick="setFs(12)">Muito Pequena</button>
+      <button class="fs-btn active" id="fs-14" onclick="setFs(14)">Pequena</button>
+      <button class="fs-btn" onclick="setFs(16)">Normal</button>
+      <button class="fs-btn" onclick="setFs(18)">Grande</button>
+      <button class="fs-btn" onclick="setFs(20)">Maior</button>
     </div>
   </div>
 
@@ -436,7 +438,7 @@ tr:hover td{background:rgba(0,0,0,.06)}
 <!-- ═══ MODAL EDITAR DEPÓSITO ═══ -->
 <div class="modal-ov" id="edit-dep-modal">
   <div class="modal-box">
-    <h2>✏️ Editar Depósito</h2>
+    <h2>✏️ Editar Entrada</h2>
     <input type="hidden" id="edit-dep-id"/>
     <div class="form-row">
       <div class="fg"><label>Data *</label><input class="inp" type="date" id="ed-data"/></div>
@@ -629,6 +631,7 @@ function showPage(pg){
   if(pg==='depositos')loadDepositos();
   if(pg==='metas')loadMetas();
   if(pg==='motor')loadMotor();
+  if(pg==='pensao')loadPensao();
 }
 
 // ═══════════════════════════════════════════════
@@ -730,8 +733,10 @@ async function loadWeeklyChart(){
   const labels=wks.map(w=>w.label);
   const receitas=res.map(([rL,rD])=>(rD.data||[]).reduce((s,d)=>s+Number(d.valor),0));
   const custos=res.map(([rL])=>(rL.data||[]).reduce((s,l)=>s+Number(l.valor),0));
+  const saldo=receitas.map((r,i)=>r-custos[i]);
   const isDark=!document.body.classList.contains('light');
-  const tc=isDark?'#94A3B8':'#64748B';const gc=isDark?'#334155':'#CBD5E1';
+  const tc=isDark?'#94A3B8':'#64748B';const gc=isDark?'rgba(51,65,85,.5)':'rgba(203,213,225,.5)';
+  const bg=isDark?'#0F172A':'#F8FAFC';
   if(wChart)wChart.destroy();
   const ctx=document.getElementById('weekly-chart').getContext('2d');
   wChart=new Chart(ctx,{
@@ -739,16 +744,60 @@ async function loadWeeklyChart(){
     data:{
       labels,
       datasets:[
-        {label:'Receitas',data:receitas,backgroundColor:'rgba(16,185,129,.55)',borderColor:'#10B981',borderWidth:1.5,borderRadius:4},
-        {label:'Custos',data:custos,backgroundColor:'rgba(239,68,68,.55)',borderColor:'#EF4444',borderWidth:1.5,borderRadius:4}
+        {
+          label:'Entradas',data:receitas,
+          backgroundColor:'rgba(16,185,129,.65)',borderColor:'#10B981',
+          borderWidth:2,borderRadius:6,borderSkipped:false,
+          order:2
+        },
+        {
+          label:'Custos',data:custos,
+          backgroundColor:'rgba(239,68,68,.65)',borderColor:'#EF4444',
+          borderWidth:2,borderRadius:6,borderSkipped:false,
+          order:2
+        },
+        {
+          label:'Saldo',data:saldo,type:'line',
+          borderColor:'#60A5FA',backgroundColor:'rgba(96,165,250,.12)',
+          borderWidth:2.5,pointRadius:5,pointBackgroundColor:'#60A5FA',
+          pointBorderColor:'#fff',pointBorderWidth:1.5,
+          tension:0.35,fill:true,order:1
+        }
       ]
     },
     options:{
       responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{labels:{color:tc,font:{size:12}}}},
+      interaction:{mode:'index',intersect:false},
+      plugins:{
+        legend:{
+          position:'top',
+          labels:{color:tc,font:{size:12,weight:'600'},padding:16,
+            usePointStyle:true,pointStyleWidth:10}
+        },
+        tooltip:{
+          backgroundColor:isDark?'#1E293B':'#fff',
+          titleColor:isDark?'#F1F5F9':'#0F172A',
+          bodyColor:tc,
+          borderColor:isDark?'#334155':'#CBD5E1',
+          borderWidth:1,padding:12,
+          callbacks:{label:ctx=>{
+            const v=ctx.raw||0;
+            return ' '+ctx.dataset.label+': R$ '+Math.abs(v).toLocaleString('pt-BR',{minimumFractionDigits:2});
+          }}
+        }
+      },
       scales:{
-        x:{ticks:{color:tc},grid:{color:gc}},
-        y:{ticks:{color:tc,callback:v=>'R$'+v.toLocaleString('pt-BR')},grid:{color:gc}}
+        x:{
+          ticks:{color:tc,font:{size:11}},
+          grid:{color:gc},
+          border:{color:'transparent'}
+        },
+        y:{
+          ticks:{color:tc,font:{size:11},
+            callback:v=>'R$'+Number(v).toLocaleString('pt-BR',{minimumFractionDigits:0})},
+          grid:{color:gc},
+          border:{color:'transparent'}
+        }
       }
     }
   });
@@ -759,7 +808,7 @@ async function showDetail(type){
   const{lancs,deps,yr,mo}=dashCache;
   let title='',rows=[];
   if(type==='receitas'){
-    title='💵 Receitas do Mês';
+    title='💵 Entradas do Mês';
     rows=deps.map(d=>`<tr><td>${fmtDate(d.data)}</td><td>${esc(d.descricao||'–')}</td><td class="c-g">${fmtBRL(d.valor)}</td></tr>`);
   }else if(type==='custos'){
     title='💸 Custos Totais';
@@ -1167,7 +1216,7 @@ async function exportExtract(){
       <div style="flex:1;background:#1E293B;border-radius:8px;padding:.8rem;text-align:center"><div style="font-size:.7rem;color:#94A3B8;margin-bottom:.3rem">CUSTOS</div><div style="font-size:1.2rem;font-weight:bold;color:#EF4444">${fmtBRL(cus)}</div></div>
       <div style="flex:1;background:#1E293B;border-radius:8px;padding:.8rem;text-align:center"><div style="font-size:.7rem;color:#94A3B8;margin-bottom:.3rem">SALDO</div><div style="font-size:1.2rem;font-weight:bold;color:${rec-cus>=0?'#10B981':'#EF4444'}">${fmtBRL(rec-cus)}</div></div>
     </div>
-    ${D.length>0?`<div style="margin-bottom:.8rem"><div style="font-weight:bold;margin-bottom:.4rem;font-size:.85rem">💵 RECEITAS</div>${D.map(d=>`<div style="display:flex;justify-content:space-between;padding:.28rem 0;border-bottom:1px solid #334155;font-size:.8rem"><span>${fmtDate(d.data)} — ${esc(d.descricao||'–')}</span><span style="color:#10B981">${fmtBRL(d.valor)}</span></div>`).join('')}</div>`:''}
+    ${D.length>0?`<div style="margin-bottom:.8rem"><div style="font-weight:bold;margin-bottom:.4rem;font-size:.85rem">💵 ENTRADAS</div>${D.map(d=>`<div style="display:flex;justify-content:space-between;padding:.28rem 0;border-bottom:1px solid #334155;font-size:.8rem"><span>${fmtDate(d.data)} — ${esc(d.descricao||'–')}</span><span style="color:#10B981">${fmtBRL(d.valor)}</span></div>`).join('')}</div>`:''}
     ${L.length>0?`<div><div style="font-weight:bold;margin-bottom:.4rem;font-size:.85rem">📋 LANÇAMENTOS</div>${L.map(l=>`<div style="display:flex;justify-content:space-between;padding:.28rem 0;border-bottom:1px solid #334155;font-size:.8rem"><span>${fmtDate(l.data)} — ${esc(l.descricao)} [P${l.peso}]</span><span style="color:${l.status==='Pago'?'#10B981':l.status==='Vencido'?'#EF4444':'#F59E0B'}">${fmtBRL(l.valor)} (${l.status})</span></div>`).join('')}</div>`:''}
     <div style="margin-top:1rem;text-align:center;font-size:.7rem;color:#64748B">Gerado em ${new Date().toLocaleString('pt-BR')} — Dashboard Financeiro</div>`;
 
@@ -1220,6 +1269,83 @@ async function checkAllPaid(){
   if(L.length>0&&L.every(l=>l.status==='Pago')){
     document.getElementById('celeb-modal').classList.add('open');
   }
+}
+
+
+
+// ═══════════════════════════════════════════════
+// EXTRATO PENSÃO
+// ═══════════════════════════════════════════════
+async function loadPensao(){
+  const cont=document.getElementById('pensao-content');
+  const summ=document.getElementById('pensao-summary');
+  cont.innerHTML='<div class="loading">Buscando…</div>';
+  summ.innerHTML='';
+  try{
+    const[rL,rD]=await Promise.all([
+      sb.from('lancamentos').select('*').eq('username',CU).ilike('descricao','%pensão%').order('data',{ascending:false}),
+      sb.from('depositos').select('*').eq('username',CU).ilike('descricao','%pensão%').order('data',{ascending:false})
+    ]);
+    const lancs=rL.data||[];const deps=rD.data||[];
+    const totalL=lancs.reduce((s,l)=>s+Number(l.valor),0);
+    const totalD=deps.reduce((s,d)=>s+Number(d.valor),0);
+    summ.innerHTML=`
+      <div style="flex:1;min-width:140px;background:var(--bg2);border-radius:8px;padding:.85rem;text-align:center;border:1px solid rgba(239,68,68,.3)">
+        <div style="font-size:.7rem;color:var(--muted);text-transform:uppercase;margin-bottom:.3rem">Lançamentos Pensão</div>
+        <div style="font-size:1.2rem;font-weight:bold;color:var(--red)">${fmtBRL(totalL)}</div>
+        <div style="font-size:.75rem;color:var(--muted);margin-top:.2rem">${lancs.length} registro(s)</div>
+      </div>
+      <div style="flex:1;min-width:140px;background:var(--bg2);border-radius:8px;padding:.85rem;text-align:center;border:1px solid rgba(16,185,129,.3)">
+        <div style="font-size:.7rem;color:var(--muted);text-transform:uppercase;margin-bottom:.3rem">Entradas Pensão</div>
+        <div style="font-size:1.2rem;font-weight:bold;color:var(--green)">${fmtBRL(totalD)}</div>
+        <div style="font-size:.75rem;color:var(--muted);margin-top:.2rem">${deps.length} registro(s)</div>
+      </div>
+      <div style="flex:1;min-width:140px;background:var(--bg2);border-radius:8px;padding:.85rem;text-align:center;border:1px solid rgba(96,165,250,.3)">
+        <div style="font-size:.7rem;color:var(--muted);text-transform:uppercase;margin-bottom:.3rem">Saldo Pensão</div>
+        <div style="font-size:1.2rem;font-weight:bold;color:${totalD-totalL>=0?'#10B981':'#EF4444'}">${fmtBRL(totalD-totalL)}</div>
+        <div style="font-size:.75rem;color:var(--muted);margin-top:.2rem">Entradas - Custos</div>
+      </div>`;
+    let html='';
+    if(lancs.length>0){
+      html+=`<div style="margin-bottom:1.4rem">
+        <h3 style="margin-bottom:.8rem;font-size:.95rem;color:var(--red)">📋 Lançamentos com Pensão</h3>
+        <div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Data</th><th>Descrição</th><th>Peso</th><th>Valor</th><th>Status</th></tr></thead><tbody>
+        ${lancs.map(l=>`<tr><td>${fmtDate(l.data)}</td><td>${esc(l.descricao)}</td><td>${pBadge(l.peso)}</td><td>${fmtBRL(l.valor)}</td><td>${sBadge(l.status)}</td></tr>`).join('')}
+        </tbody></table></div></div>`;
+    }
+    if(deps.length>0){
+      html+=`<div>
+        <h3 style="margin-bottom:.8rem;font-size:.95rem;color:var(--green)">💵 Entradas com Pensão</h3>
+        <div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Data</th><th>Descrição</th><th>Valor</th></tr></thead><tbody>
+        ${deps.map(d=>`<tr><td>${fmtDate(d.data)}</td><td>${esc(d.descricao||'–')}</td><td style="color:var(--green)">${fmtBRL(d.valor)}</td></tr>`).join('')}
+        </tbody></table></div></div>`;
+    }
+    if(!html)html='<div class="alert a-info">Nenhum registro com "Pensão" encontrado.</div>';
+    cont.innerHTML=html;
+  }catch(e){cont.innerHTML='<div class="err">Erro: '+e.message+'</div>';}
+}
+
+// ═══════════════════════════════════════════════
+// SYNC GLOBAL DATE
+// ═══════════════════════════════════════════════
+function syncGlobalDate(yr,mo){
+  ['lanc-year','dep-year','meta-year','motor-year','exp-year'].forEach(id=>{
+    const el=document.getElementById(id);if(el)el.value=yr;
+  });
+  const mm=document.getElementById('motor-month');if(mm)mm.value=mo;
+  const em=document.getElementById('exp-month');if(em)em.value=mo;
+  ALM=mo;ADM=mo;
+  // Rebuild month tabs on visible pages
+  const lancTabs=document.getElementById('lanc-months');
+  if(lancTabs&&lancTabs.children.length)buildTabs('lanc-months',ALM,m=>{ALM=m;loadLancamentos();});
+  const depTabs=document.getElementById('dep-months');
+  if(depTabs&&depTabs.children.length)buildTabs('dep-months',ADM,m=>{ADM=m;loadDepositos();});
+}
+function syncAndLoad(){
+  const yr=parseInt(document.getElementById('dash-year').value);
+  const mo=parseInt(document.getElementById('dash-month').value);
+  syncGlobalDate(yr,mo);
+  loadDashboard();
 }
 
 // ═══════════════════════════════════════════════
