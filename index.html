@@ -304,6 +304,7 @@ tr:hover td{background:rgba(0,0,0,.06)}
       <div class="fg" style="grid-column:span 2"><label>Descrição *</label><input class="inp" type="text" id="lanc-desc" placeholder="Ex: Aluguel, Cartão Nubank…"/></div>
       <div class="fg"><label>Valor (R$) *</label><div class="vi"><button class="vs" onclick="vstep('lanc-val',-100)">−</button><input class="inp" type="number" id="lanc-val" placeholder="0.00" min="0" step="0.01"/><button class="vs" onclick="vstep('lanc-val',100)">+</button></div></div>
       <div class="fg"><label>Peso *</label><select class="inp" id="lanc-peso"><option value="1">⚡ 1 – Essencial</option><option value="2" selected>💰 2 – Financeiro</option><option value="3">📦 3 – Não Essencial</option></select></div>
+      <div class="fg"><label>Fonte de Pagamento</label><select class="inp" id="lanc-fonte"><option value="">– Não informado –</option><option value="Pensão">💙 Pensão</option><option value="Freelancer">💼 Freelancer</option><option value="Trabalho">💳 Trabalho</option></select></div>
       <div class="fg"><label>Status</label><select class="inp" id="lanc-status"><option value="Em Aberto" selected>Em Aberto</option><option value="Pago">Pago</option><option value="Vencido">Vencido</option></select></div>
       <div class="fg"><label>Juros/Multa a.m. (%)</label><input class="inp" type="number" id="lanc-juros" placeholder="0.00" min="0" step="0.01" value="0"/></div>
     </div>
@@ -423,6 +424,7 @@ tr:hover td{background:rgba(0,0,0,.06)}
       <div class="fg" style="grid-column:span 2"><label>Descrição *</label><input class="inp" type="text" id="el-desc"/></div>
       <div class="fg"><label>Valor (R$) *</label><div class="vi"><button class="vs" onclick="vstep('el-val',-100)">−</button><input class="inp" type="number" id="el-val" min="0" step="0.01"/><button class="vs" onclick="vstep('el-val',100)">+</button></div></div>
       <div class="fg"><label>Peso *</label><select class="inp" id="el-peso"><option value="1">⚡ 1 – Essencial</option><option value="2">💰 2 – Financeiro</option><option value="3">📦 3 – Não Essencial</option></select></div>
+      <div class="fg"><label>Fonte de Pagamento</label><select class="inp" id="el-fonte"><option value="">– Não informado –</option><option value="Pensão">💙 Pensão</option><option value="Freelancer">💼 Freelancer</option><option value="Trabalho">💳 Trabalho</option></select></div>
       <div class="fg"><label>Status</label><select class="inp" id="el-status"><option value="Em Aberto">Em Aberto</option><option value="Pago">Pago</option><option value="Vencido">Vencido</option></select></div>
       <div class="fg"><label>Juros/Multa a.m. (%)</label><input class="inp" type="number" id="el-juros" min="0" step="0.01"/></div>
     </div>
@@ -543,6 +545,14 @@ function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').
 function vstep(id,d){const e=document.getElementById(id);e.value=Math.max(0,(parseFloat(e.value)||0)+d).toFixed(2)}
 function sBadge(s){if(s==='Pago')return'<span class="badge b-pg">Pago</span>';if(s==='Vencido')return'<span class="badge b-vn">Vencido</span>';return'<span class="badge b-ab">Em Aberto</span>'}
 function pBadge(p){return`<span class="badge p${p}">${PLBL[p]||p}</span>`}
+
+function fonteBadge(f){
+  if(!f)return'<span style="color:var(--muted);font-size:.72rem">–</span>';
+  const map={Pensão:{bg:'rgba(99,179,237,.2)',c:'#63B3ED',e:'💙'},Freelancer:{bg:'rgba(245,158,11,.2)',c:'#FBBF24',e:'💼'},Trabalho:{bg:'rgba(16,185,129,.2)',c:'#10B981',e:'💳'}};
+  const m=map[f]||{bg:'rgba(148,163,184,.2)',c:'#94A3B8',e:'📌'};
+  return`<span style="background:${m.bg};color:${m.c};border-radius:99px;padding:.15rem .45rem;font-size:.7rem;font-weight:700;white-space:nowrap">${m.e} ${f}</span>`;
+}
+
 function closeModal(id){document.getElementById(id).classList.remove('open')}
 
 function fillYr(id,to2030){
@@ -850,10 +860,11 @@ async function loadLancamentos(){
   if(error){document.getElementById('lanc-tbl').innerHTML=`<div class="empty">Erro: ${esc(error.message)}</div>`;return;}
   const L=data||[];
   if(L.length===0){document.getElementById('lanc-tbl').innerHTML='<div class="empty">Nenhum lançamento neste mês. Adicione acima ⬆️</div>';return;}
-  let h=`<table><thead><tr><th>Data</th><th>Descrição</th><th>Peso</th><th>Valor</th><th>Juros a.m.%</th><th>Status</th><th>Obs</th><th>Ações</th></tr></thead><tbody>`;
+  let h=`<table><thead><tr><th>Data</th><th>Descrição</th><th>Peso</th><th>Valor</th><th>Juros a.m.%</th><th>Fonte</th><th>Status</th><th>Obs</th><th>Ações</th></tr></thead><tbody>`;
   for(const l of L){
     const pgChk=l.status==='Pago'?'<span title="Pago" style="color:var(--green);margin-left:.3rem;font-size:1em">✅</span>':'';
     const stSel=`<select class="inp" style="padding:.28rem .45rem;font-size:.75em;width:108px" onchange="updSt(${l.id},this.value,${l.peso},this)">${['Em Aberto','Pago','Vencido'].map(s=>`<option${l.status===s?' selected':''}>${s}</option>`).join('')}</select>`;
+    const fonteSel=`<select class="inp" style="padding:.28rem .45rem;font-size:.75em;width:112px" onchange="updFonte(${l.id},this.value)"><option value=""${!l.fonte_pagamento?' selected':''}>– –</option>${['Pensão','Freelancer','Trabalho'].map(f=>`<option${l.fonte_pagamento===f?' selected':''}>${f}</option>`).join('')}</select>`;
     const key='l'+l.id;
     const del=delQ[key]
       ?`<span style="display:flex;gap:.28rem"><button class="btn btn-danger btn-sm" onclick="confDel('l',${l.id})">✓</button><button class="btn btn-sec btn-sm" onclick="canDel('l${l.id}')">✗</button></span>`
@@ -864,6 +875,7 @@ async function loadLancamentos(){
       <td>${pBadge(l.peso)}</td>
       <td style="white-space:nowrap">${fmtBRL(l.valor)}</td>
       <td>${Number(l.juros_multa||0).toFixed(1)}%</td>
+      <td>${fonteSel}</td>
       <td>${stSel}</td>
       <td style="max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(l.obs||'')}">${esc(l.obs||'–')}</td>
       <td style="display:flex;gap:.3rem"><button class="btn btn-sec btn-sm" onclick="openEditLanc(${l.id})">✏️</button>${del}</td>
@@ -882,19 +894,24 @@ async function addLancamento(){
   const status=document.getElementById('lanc-status').value;
   const juros=parseFloat(document.getElementById('lanc-juros').value)||0;
   const obs=document.getElementById('lanc-obs').value.trim();
+  const fonte=document.getElementById('lanc-fonte').value||null;
   if(!data){err.textContent='Data obrigatória.';return;}
   if(!desc){err.textContent='Descrição obrigatória.';return;}
   if(!valor||valor<=0){err.textContent='Valor deve ser maior que zero.';return;}
   const id=Date.now()+Math.floor(Math.random()*999);
-  const{error}=await sb.from('lancamentos').insert({id,username:CU,data,descricao:desc,valor,peso,status,juros_multa:juros,obs});
+  const{error}=await sb.from('lancamentos').insert({id,username:CU,data,descricao:desc,valor,peso,status,juros_multa:juros,obs,fonte_pagamento:fonte});
   if(error){err.textContent='Erro: '+error.message;return;}
   ['lanc-data','lanc-desc','lanc-val','lanc-obs'].forEach(i=>document.getElementById(i).value='');
   document.getElementById('lanc-juros').value='0';document.getElementById('lanc-peso').value='2';
-  document.getElementById('lanc-status').value='Em Aberto';document.getElementById('lanc-data').value=today();
+  document.getElementById('lanc-status').value='Em Aberto';document.getElementById('lanc-fonte').value='';document.getElementById('lanc-data').value=today();
   ALM=parseInt(data.split('-')[1]);
   loadLancamentos();loadWeekly();genAI();
 }
 
+
+async function updFonte(id,fonte){
+  await sb.from('lancamentos').update({fonte_pagamento:fonte||null}).eq('id',id).eq('username',CU);
+}
 // STATUS UPDATE WITH WARNING
 async function updSt(id,ns,peso,sel){
   if(ns==='Pago'&&parseInt(peso)===3){
@@ -943,6 +960,7 @@ async function openEditLanc(id){
   document.getElementById('el-status').value=data.status;
   document.getElementById('el-juros').value=Number(data.juros_multa||0).toFixed(2);
   document.getElementById('el-obs').value=data.obs||'';
+  document.getElementById('el-fonte').value=data.fonte_pagamento||'';
   document.getElementById('el-err').textContent='';
   document.getElementById('edit-lanc-modal').classList.add('open');
 }
@@ -956,8 +974,9 @@ async function saveEditLanc(){
   const status=document.getElementById('el-status').value;
   const juros=parseFloat(document.getElementById('el-juros').value)||0;
   const obs=document.getElementById('el-obs').value.trim();
+  const fonte=document.getElementById('el-fonte').value||null;
   if(!data||!desc||!valor||valor<=0){err.textContent='Preencha todos os campos obrigatórios.';return;}
-  const{error}=await sb.from('lancamentos').update({data,descricao:desc,valor,peso,status,juros_multa:juros,obs}).eq('id',id).eq('username',CU);
+  const{error}=await sb.from('lancamentos').update({data,descricao:desc,valor,peso,status,juros_multa:juros,obs,fonte_pagamento:fonte}).eq('id',id).eq('username',CU);
   if(error){err.textContent='Erro: '+error.message;return;}
   closeModal('edit-lanc-modal');loadLancamentos();genAI();
 }
@@ -1185,9 +1204,9 @@ async function exportExtract(){
   const{start:ws,end:we}=wRange();
   let L=[],D=[];
   if(tipo==='pensao'){
-    // Busca TODOS os registros com "Pensão" na descrição (sem filtro de data)
+    // Entradas: descrição contém "Pensão" | Lançamentos: fonte_pagamento = 'Pensão'
     const[rL,rD]=await Promise.all([
-      sb.from('lancamentos').select('*').eq('username',CU).ilike('descricao','%pensão%').order('data',{ascending:false}),
+      sb.from('lancamentos').select('*').eq('username',CU).eq('fonte_pagamento','Pensão').order('data',{ascending:false}),
       sb.from('depositos').select('*').eq('username',CU).ilike('descricao','%pensão%').order('data',{ascending:false})
     ]);
     L=rL.data||[];D=rD.data||[];
