@@ -248,7 +248,6 @@ tr:hover td{background:rgba(0,0,0,.06)}
     <a class="nav-item"        data-p="depositos"   onclick="showPage('depositos')">💵 Entradas</a>
     <a class="nav-item"        data-p="metas"       onclick="showPage('metas')">🎯 Metas</a>
     <a class="nav-item"        data-p="motor"       onclick="showPage('motor')">⚡ Motor de Decisão</a>
-    <a class="nav-item"        data-p="pensao"      onclick="showPage('pensao')">💙 Extrato Pensão</a>
     <a class="nav-item"        data-p="config"      onclick="showPage('config')">⚙️ Configurações</a>
   </nav>
   <div class="ai-box">
@@ -392,6 +391,7 @@ tr:hover td{background:rgba(0,0,0,.06)}
       <label class="export-opt"><input type="radio" name="exp-tipo" value="aberto"/> 🔴 Em Aberto</label>
       <label class="export-opt"><input type="radio" name="exp-tipo" value="vencidos"/> ⚠️ Vencidos</label>
       <label class="export-opt"><input type="radio" name="exp-tipo" value="completo"/> 📊 Completo</label>
+      <label class="export-opt"><input type="radio" name="exp-tipo" value="pensao"/> 💙 Pensão</label>
     </div>
     <div class="ph-right" style="margin-top:.5rem">
       <select class="yr-sel" id="exp-year"></select>
@@ -631,7 +631,6 @@ function showPage(pg){
   if(pg==='depositos')loadDepositos();
   if(pg==='metas')loadMetas();
   if(pg==='motor')loadMotor();
-  if(pg==='pensao')loadPensao();
 }
 
 // ═══════════════════════════════════════════════
@@ -1185,7 +1184,14 @@ async function exportExtract(){
   const{start,end}=mRange(yr,mo);
   const{start:ws,end:we}=wRange();
   let L=[],D=[];
-  if(tipo==='semanal'){
+  if(tipo==='pensao'){
+    // Busca TODOS os registros com "Pensão" na descrição (sem filtro de data)
+    const[rL,rD]=await Promise.all([
+      sb.from('lancamentos').select('*').eq('username',CU).ilike('descricao','%pensão%').order('data',{ascending:false}),
+      sb.from('depositos').select('*').eq('username',CU).ilike('descricao','%pensão%').order('data',{ascending:false})
+    ]);
+    L=rL.data||[];D=rD.data||[];
+  }else if(tipo==='semanal'){
     const[rL,rD]=await Promise.all([sb.from('lancamentos').select('*').eq('username',CU).gte('data',ws).lte('data',we).order('data'),sb.from('depositos').select('*').eq('username',CU).gte('data',ws).lte('data',we)]);
     L=rL.data||[];D=rD.data||[];
   }else{
@@ -1201,7 +1207,7 @@ async function exportExtract(){
 
   const rec=D.reduce((s,d)=>s+Number(d.valor),0);
   const cus=L.reduce((s,l)=>s+Number(l.valor),0);
-  const tipoLabel={semanal:'Semanal',mensal:'Mensal',peso:'Por Peso',status:'Por Status',pagos:'Pagos',aberto:'Em Aberto',vencidos:'Vencidos',completo:'Completo'};
+  const tipoLabel={semanal:'Semanal',mensal:'Mensal',peso:'Por Peso',status:'Por Status',pagos:'Pagos',aberto:'Em Aberto',vencidos:'Vencidos',completo:'Completo',pensao:'Pensão – Todos os Registros'};
 
   const area=document.getElementById('extrato-area');
   area.style.background=document.body.classList.contains('light')?'#F1F5F9':'#0F172A';
@@ -1209,7 +1215,7 @@ async function exportExtract(){
   area.innerHTML=`
     <div style="text-align:center;margin-bottom:1rem;border-bottom:2px solid #334155;padding-bottom:.8rem">
       <div style="font-size:1.5rem;font-weight:bold">💰 Extrato Financeiro</div>
-      <div style="font-size:.85rem;color:#94A3B8">${tipoLabel[tipo]} — ${tipo==='semanal'?fmtDate(ws)+' a '+fmtDate(we):MESES[mo]+'/'+yr} — ${today()}</div>
+      <div style="font-size:.85rem;color:#94A3B8">${tipoLabel[tipo]} — ${tipo==='pensao'?'Histórico Completo':tipo==='semanal'?fmtDate(ws)+' a '+fmtDate(we):MESES[mo]+'/'+yr} — ${today()}</div>
     </div>
     <div style="display:flex;gap:1rem;margin-bottom:1rem">
       <div style="flex:1;background:#1E293B;border-radius:8px;padding:.8rem;text-align:center"><div style="font-size:.7rem;color:#94A3B8;margin-bottom:.3rem">RECEITAS</div><div style="font-size:1.2rem;font-weight:bold;color:#10B981">${fmtBRL(rec)}</div></div>
@@ -1217,7 +1223,7 @@ async function exportExtract(){
       <div style="flex:1;background:#1E293B;border-radius:8px;padding:.8rem;text-align:center"><div style="font-size:.7rem;color:#94A3B8;margin-bottom:.3rem">SALDO</div><div style="font-size:1.2rem;font-weight:bold;color:${rec-cus>=0?'#10B981':'#EF4444'}">${fmtBRL(rec-cus)}</div></div>
     </div>
     ${D.length>0?`<div style="margin-bottom:.8rem"><div style="font-weight:bold;margin-bottom:.4rem;font-size:.85rem">💵 ENTRADAS</div>${D.map(d=>`<div style="display:flex;justify-content:space-between;padding:.28rem 0;border-bottom:1px solid #334155;font-size:.8rem"><span>${fmtDate(d.data)} — ${esc(d.descricao||'–')}</span><span style="color:#10B981">${fmtBRL(d.valor)}</span></div>`).join('')}</div>`:''}
-    ${L.length>0?`<div><div style="font-weight:bold;margin-bottom:.4rem;font-size:.85rem">📋 LANÇAMENTOS</div>${L.map(l=>`<div style="display:flex;justify-content:space-between;padding:.28rem 0;border-bottom:1px solid #334155;font-size:.8rem"><span>${fmtDate(l.data)} — ${esc(l.descricao)} [P${l.peso}]</span><span style="color:${l.status==='Pago'?'#10B981':l.status==='Vencido'?'#EF4444':'#F59E0B'}">${fmtBRL(l.valor)} (${l.status})</span></div>`).join('')}</div>`:''}
+    ${L.length>0?`<div><div style="font-weight:bold;margin-bottom:.4rem;font-size:.85rem">📋 LANÇAMENTOS</div>${L.map(l=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:.28rem 0;border-bottom:1px solid #334155;font-size:.8rem"><span>${fmtDate(l.data)} — ${esc(l.descricao)}${tipo==='pensao'?'':' [P'+l.peso+']'}</span><span style="display:flex;align-items:center;gap:.4rem"><span style="font-size:.7rem;padding:.1rem .4rem;border-radius:99px;background:${l.peso===1?'rgba(239,68,68,.2)':l.peso===2?'rgba(245,158,11,.2)':'rgba(99,179,237,.15)'};color:${l.peso===1?'#FF6B6B':l.peso===2?'#FBBF24':'#63B3ED'}">${PLBL[l.peso]||'P'+l.peso}</span><span style="color:${l.status==='Pago'?'#10B981':l.status==='Vencido'?'#EF4444':'#F59E0B'}">${fmtBRL(l.valor)} (${l.status})</span></span></div>`).join('')}</div>`:''}
     <div style="margin-top:1rem;text-align:center;font-size:.7rem;color:#64748B">Gerado em ${new Date().toLocaleString('pt-BR')} — Dashboard Financeiro</div>`;
 
   try{
