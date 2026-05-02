@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Dashboard Financeiro</title>
+<title>Dashboard Financeiro / Semanal da Minha Vida</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -21,6 +21,17 @@ body.light{
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 body{font-family:Arial,sans-serif;font-size:var(--fs);background:var(--bg);color:var(--text);min-height:100vh;transition:background .2s,color .2s}
 
+
+/* LOGO */
+.logo-img{width:72px;height:72px;border-radius:50%;object-fit:cover;margin-bottom:.9rem;border:2px solid #B8960C}
+.s-logo-img{width:34px;height:34px;border-radius:50%;object-fit:cover;border:1.5px solid #B8960C;flex-shrink:0}
+/* CELEBRATION */
+#celeb-modal .modal-box{max-width:420px;text-align:center;background:linear-gradient(135deg,#0F172A,#1a1040)}
+.celeb-hearts{font-size:2.5rem;animation:heartbeat 1.2s ease infinite}
+@keyframes heartbeat{0%,100%{transform:scale(1)}50%{transform:scale(1.15)}}
+/* REGISTER */
+.login-toggle{font-size:.82rem;color:var(--muted);margin-top:1rem}
+.login-toggle a{color:var(--pri);cursor:pointer;text-decoration:underline}
 /* LOGIN */
 #login-page{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:1rem}
 .login-card{background:var(--bg2);border-radius:12px;padding:2.5rem;width:100%;max-width:380px;text-align:center}
@@ -199,14 +210,28 @@ tr:hover td{background:rgba(0,0,0,.06)}
 
 <!-- ═══ LOGIN ═══ -->
 <div id="login-page">
-  <div class="login-card">
-    <div style="font-size:2.8rem;margin-bottom:.4rem">💰</div>
-    <h1>Dashboard Financeiro</h1>
+  <!-- LOGIN FORM -->
+  <div class="login-card" id="login-form">
+    <img src="logo.png" class="logo-img" alt="Logo" onerror="this.style.display='none'"/>
+    <h1 style="font-size:1.45rem;line-height:1.3;margin-bottom:.4rem">Dashboard Financeiro /<br>Semanal da Minha Vida</h1>
     <p>Controle suas finanças com inteligência</p>
     <input class="inp" id="inp-user" type="text" placeholder="Usuário" autocomplete="username" onkeydown="if(event.key==='Enter')document.getElementById('inp-pass').focus()"/>
     <input class="inp" id="inp-pass" type="password" placeholder="Senha" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"/>
     <button class="btn btn-pri btn-block" id="btn-login" onclick="doLogin()">Entrar</button>
     <div class="err" id="login-err"></div>
+    <div class="login-toggle">Não tem conta? <a onclick="showRegister()">Cadastrar</a></div>
+  </div>
+  <!-- REGISTER FORM -->
+  <div class="login-card" id="register-form" style="display:none">
+    <img src="logo.png" class="logo-img" alt="Logo" onerror="this.style.display='none'"/>
+    <h1 style="font-size:1.45rem;line-height:1.3;margin-bottom:.4rem">Criar Conta</h1>
+    <p>Preencha os dados para se cadastrar</p>
+    <input class="inp" id="reg-user" type="text" placeholder="Usuário" autocomplete="username"/>
+    <input class="inp" id="reg-pass" type="password" placeholder="Senha" autocomplete="new-password"/>
+    <input class="inp" id="reg-conf" type="password" placeholder="Confirmar Senha" autocomplete="new-password"/>
+    <button class="btn btn-pri btn-block" onclick="doRegister()">Cadastrar</button>
+    <div class="err" id="reg-err"></div>
+    <div class="login-toggle">Já tem conta? <a onclick="showLogin()">Entrar</a></div>
   </div>
 </div>
 
@@ -215,7 +240,7 @@ tr:hover td{background:rgba(0,0,0,.06)}
 
 <!-- SIDEBAR -->
 <aside id="sidebar">
-  <div class="s-logo">💰 Financeiro</div>
+  <div class="s-logo" style="display:flex;align-items:center;gap:.55rem"><img src="logo.png" class="s-logo-img" alt="" onerror="this.style.display='none'"/><span>Financeiro</span></div>
   <div class="s-user" id="s-user">–</div>
   <nav>
     <a class="nav-item active" data-p="dashboard"   onclick="showPage('dashboard')">📊 Dashboard</a>
@@ -450,6 +475,19 @@ tr:hover td{background:rgba(0,0,0,.06)}
   </div>
 </div>
 
+
+<!-- ═══ MODAL CELEBRAÇÃO ═══ -->
+<div class="modal-ov" id="celeb-modal">
+  <div class="modal-box" style="max-width:420px;text-align:center;background:linear-gradient(135deg,#0F172A,#1a1040)">
+    <div class="celeb-hearts">❤️</div>
+    <h2 style="color:#F59E0B;font-size:1.25rem;margin:.75rem 0 .5rem">ORGULHO DE TI, AMOR!</h2>
+    <p style="color:#F1F5F9;font-size:1rem;font-weight:bold;margin-bottom:.5rem">MUITO BEM, TU PAGOU TODAS AS CONTAS!</p>
+    <div style="font-size:2rem;margin-bottom:1.2rem">🎉❤️🎊</div>
+    <p style="color:var(--muted);font-size:.85rem;margin-bottom:1.3rem">Que orgulho! Todas as contas do mês estão pagas. Continue assim!</p>
+    <button class="btn btn-pri" onclick="closeModal('celeb-modal')">💕 Obrigado!</button>
+  </div>
+</div>
+
 <!-- ═══ EXTRATO HIDDEN (para captura) ═══ -->
 <div id="extrato-area" style="position:fixed;left:-9999px;top:0;background:#0F172A;color:#F1F5F9;padding:1.5rem;width:600px;font-family:Arial;font-size:13px"></div>
 
@@ -541,28 +579,40 @@ async function doLogin(){
     const{data,error}=await sb.from('users').select('*').eq('username',u).eq('password_hash',h).single();
     if(error||!data){err.textContent='Usuário ou senha incorretos.';return;}
     CU=data.username;
-    sessionStorage.setItem('fin_u',CU);
+    localStorage.setItem('fin_u',CU);
+    localStorage.setItem('fin_ts',Date.now());
     document.getElementById('login-page').style.display='none';
     document.getElementById('app').style.display='flex';
     document.getElementById('s-user').textContent='👤 '+CU;
+    startSessionTimer();
     initApp();
   }catch(e){err.textContent='Erro: '+e.message;}
   finally{btn.textContent='Entrar';btn.disabled=false;}
 }
 function doLogout(){
-  CU=null;sessionStorage.removeItem('fin_u');
+  CU=null;clearSession();if(_sessTimer)clearTimeout(_sessTimer);
   document.getElementById('app').style.display='none';
   document.getElementById('login-page').style.display='flex';
   document.getElementById('inp-pass').value='';
   document.getElementById('login-err').textContent='';
 }
+const SESSION_MS = 60 * 60 * 1000; // 1 hora
+
 async function checkSession(){
-  const u=sessionStorage.getItem('fin_u');
-  if(u){
+  const u=localStorage.getItem('fin_u');
+  const ts=parseInt(localStorage.getItem('fin_ts')||'0');
+  if(u && Date.now()-ts < SESSION_MS){
     const{data}=await sb.from('users').select('username').eq('username',u).single();
-    if(data){CU=data.username;document.getElementById('login-page').style.display='none';document.getElementById('app').style.display='flex';document.getElementById('s-user').textContent='👤 '+CU;initApp();return;}
+    if(data){CU=data.username;document.getElementById('login-page').style.display='none';document.getElementById('app').style.display='flex';document.getElementById('s-user').textContent='👤 '+CU;initApp();startSessionTimer();return;}
   }
+  clearSession();
   document.getElementById('login-page').style.display='flex';
+}
+function clearSession(){localStorage.removeItem('fin_u');localStorage.removeItem('fin_ts');}
+let _sessTimer=null;
+function startSessionTimer(){
+  if(_sessTimer)clearTimeout(_sessTimer);
+  _sessTimer=setTimeout(()=>{alert('Sessão expirada. Faça login novamente.');doLogout();},SESSION_MS);
 }
 
 // ═══════════════════════════════════════════════
@@ -825,7 +875,7 @@ async function confirmWarning(){
   const msg=`Foi pago item não-essencial (${ns}) enquanto essencial está em aberto — ${fmtBRL(t)} pendente. CUIDADO!`;
   await sb.from('alertas').insert({id:Date.now()+Math.floor(Math.random()*999),username:CU,tipo:'nao-essencial',mensagem:msg});
   pendSt=null;
-  loadLancamentos();loadWeekly();genAI();
+  loadLancamentos();loadWeekly();genAI();checkAllPaid();
 }
 function cancelWarning(){
   if(pendSt&&pendSt.sel)pendSt.sel.value='Em Aberto';
@@ -939,7 +989,7 @@ async function confDel(type,id){
   if(type==='l')await sb.from('lancamentos').delete().eq('id',id).eq('username',CU);
   else await sb.from('depositos').delete().eq('id',id).eq('username',CU);
   delete delQ[key];
-  if(type==='l')loadLancamentos();else loadDepositos();
+  if(type==='l'){loadLancamentos();checkAllPaid();}else loadDepositos();
   loadWeekly();genAI();
 }
 
@@ -1128,6 +1178,48 @@ async function exportExtract(){
     link.href=canvas.toDataURL('image/png');
     link.click();
   }catch(e){alert('Erro ao gerar imagem: '+e.message);}
+}
+
+
+// ═══════════════════════════════════════════════
+// REGISTER
+// ═══════════════════════════════════════════════
+function showRegister(){document.getElementById('login-form').style.display='none';document.getElementById('register-form').style.display='';document.getElementById('reg-err').textContent='';}
+function showLogin(){document.getElementById('register-form').style.display='none';document.getElementById('login-form').style.display='';}
+async function doRegister(){
+  const u=document.getElementById('reg-user').value.trim();
+  const p=document.getElementById('reg-pass').value;
+  const cn=document.getElementById('reg-conf').value;
+  const err=document.getElementById('reg-err');err.textContent='';
+  if(!u||!p||!cn){err.textContent='Preencha todos os campos.';return;}
+  if(p!==cn){err.textContent='Senhas não coincidem.';return;}
+  if(p.length<4){err.textContent='Senha deve ter pelo menos 4 caracteres.';return;}
+  if(!/^[a-zA-Z0-9_]{3,20}$/.test(u)){err.textContent='Usuário: 3-20 letras/números/underscore.';return;}
+  const{data:ex}=await sb.from('users').select('id').eq('username',u).maybeSingle();
+  if(ex){err.textContent='Usuário já existe. Escolha outro.';return;}
+  const h=await sha256(p);
+  const{error}=await sb.from('users').insert({username:u,password_hash:h});
+  if(error){err.textContent='Erro: '+error.message;return;}
+  err.style.color='var(--green)';err.textContent='✅ Conta criada! Fazendo login…';
+  setTimeout(()=>{
+    document.getElementById('inp-user').value=u;
+    document.getElementById('inp-pass').value='';
+    showLogin();
+    err.style.color='var(--red)';err.textContent='';
+  },1500);
+}
+
+// ═══════════════════════════════════════════════
+// ALL PAID CELEBRATION
+// ═══════════════════════════════════════════════
+async function checkAllPaid(){
+  const yr=parseInt(document.getElementById('lanc-year').value)||new Date().getFullYear();
+  const{start,end}=mRange(yr,ALM);
+  const{data}=await sb.from('lancamentos').select('status').eq('username',CU).gte('data',start).lte('data',end);
+  const L=data||[];
+  if(L.length>0&&L.every(l=>l.status==='Pago')){
+    document.getElementById('celeb-modal').classList.add('open');
+  }
 }
 
 // ═══════════════════════════════════════════════
