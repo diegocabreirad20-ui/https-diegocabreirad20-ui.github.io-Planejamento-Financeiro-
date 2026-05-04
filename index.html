@@ -612,7 +612,11 @@ async function doLogin(){
   btn.textContent='Entrando…';btn.disabled=true;
   try{
     const{data,error}=await sb.auth.signInWithPassword({email:u+'@dashboard.fin',password:p});
-    if(error||!data.user){err.textContent='Usuário ou senha incorretos.';return;}
+    if(error||!data.user){
+      err.textContent='Erro: '+(error?error.message:'Usuário ou senha incorretos.');
+      console.error('Supabase login error:',error);
+      return;
+    }
     CU=u;
     document.getElementById('login-page').style.display='none';
     document.getElementById('app').style.display='flex';
@@ -630,14 +634,19 @@ async function doLogout(){
   document.getElementById('login-err').textContent='';
 }
 async function checkSession(){
-  const{data:{session}}=await sb.auth.getSession();
-  if(session&&session.user){
-    CU=session.user.email.split('@')[0];
-    document.getElementById('login-page').style.display='none';
-    document.getElementById('app').style.display='flex';
-    document.getElementById('s-user').textContent='👤 '+CU;
-    initApp();
-  }else{
+  try{
+    const{data:{session}}=await sb.auth.getSession();
+    if(session&&session.user){
+      CU=session.user.email.split('@')[0];
+      document.getElementById('login-page').style.display='none';
+      document.getElementById('app').style.display='flex';
+      document.getElementById('s-user').textContent='👤 '+CU;
+      initApp();
+    }else{
+      document.getElementById('login-page').style.display='flex';
+    }
+  }catch(e){
+    console.error('checkSession error:',e);
     document.getElementById('login-page').style.display='flex';
   }
 }
