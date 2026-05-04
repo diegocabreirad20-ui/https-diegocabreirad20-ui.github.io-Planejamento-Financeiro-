@@ -171,10 +171,10 @@ tr:hover td{background:rgba(0,0,0,.06)}
 .motor-card{background:var(--bg2);border-radius:10px;padding:1.05rem;margin-bottom:.7rem;border-left:3px solid var(--border)}
 
 /* CONFIG */
-.cfg-card{background:var(--bg2);border-radius:10px;padding:1.4rem;max-width:440px;margin-bottom:1.2rem;border:1px solid var(--border)}
+.cfg-card{background:var(--bg2);border-radius:10px;padding:1.4rem;max-width:680px;margin-bottom:1.2rem;border:1px solid var(--border)}
 .cfg-card h3{margin-bottom:1rem;font-size:.95em}
-.theme-btns,.fs-btns{display:flex;gap:.6rem;margin-top:.5rem}
-.theme-btn,.fs-btn{padding:.6rem 1.2rem;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text);cursor:pointer;font-size:.85em;font-family:Arial;transition:all .15s}
+.theme-btns,.fs-btns{display:flex;gap:.6rem;margin-top:.5rem;flex-wrap:wrap;align-items:center}
+.theme-btn,.fs-btn{padding:.6rem 1.2rem;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text);cursor:pointer;font-size:.85em;font-family:Arial;transition:all .15s;white-space:nowrap}
 .theme-btn:hover,.fs-btn:hover{border-color:var(--pri)}
 .theme-btn.active,.fs-btn.active{background:var(--pri);color:#fff;border-color:var(--pri)}
 .export-opts{display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin:.7rem 0}
@@ -309,6 +309,26 @@ tr:hover td{background:rgba(0,0,0,.06)}
       <div class="fg"><label>Juros/Multa a.m. (%)</label><input class="inp" type="number" id="lanc-juros" placeholder="0.00" min="0" step="0.01" value="0"/></div>
     </div>
     <div class="fg"><label>Observação</label><input class="inp" type="text" id="lanc-obs" placeholder="Opcional"/></div>
+    <!-- Recorrência e Fixo -->
+    <div style="display:flex;gap:1.2rem;flex-wrap:wrap;align-items:flex-start;margin-top:.6rem;padding:.8rem;background:var(--bg3);border-radius:8px;border:1px solid var(--border)">
+      <div class="fg" style="min-width:160px">
+        <label>🔁 Recorrência no Mês</label>
+        <select class="inp" id="lanc-recorr" onchange="toggleRecorrDates()" style="margin-top:.3rem">
+          <option value="1">1× – Única vez</option>
+          <option value="2">2× no mês</option>
+          <option value="3">3× no mês</option>
+          <option value="4">4× no mês</option>
+          <option value="5">5× no mês</option>
+        </select>
+      </div>
+      <div class="fg" style="display:flex;align-items:center;gap:.4rem;padding-top:1.5rem">
+        <input type="checkbox" id="lanc-fixo" style="width:16px;height:16px;cursor:pointer"/>
+        <label for="lanc-fixo" style="cursor:pointer;font-size:.85em">📌 Fixo mensal (repetir todo mês pelo ano)</label>
+      </div>
+    </div>
+    <div id="recorr-dates" style="display:none;flex-wrap:wrap;gap:.6rem;margin-top:.5rem;padding:.7rem;background:var(--bg3);border-radius:8px;border:1px dashed var(--border)">
+      <div style="width:100%;font-size:.78rem;color:var(--muted);margin-bottom:.25rem">📅 Datas das ocorrências adicionais no mês:</div>
+    </div>
     <div class="err" id="lanc-err"></div>
     <button class="btn btn-pri" onclick="addLancamento()">💾 Salvar Lançamento</button>
   </div>
@@ -384,19 +404,26 @@ tr:hover td{background:rgba(0,0,0,.06)}
     <h3>📄 Exportar Extrato</h3>
     <p style="font-size:.82em;color:var(--muted);margin-bottom:.9rem">Selecione o tipo de extrato para exportar como imagem:</p>
     <div class="export-opts">
-      <label class="export-opt"><input type="radio" name="exp-tipo" value="semanal" checked/> 📅 Semanal</label>
-      <label class="export-opt"><input type="radio" name="exp-tipo" value="mensal"/> 📆 Mensal</label>
-      <label class="export-opt"><input type="radio" name="exp-tipo" value="peso"/> ⚖️ Por Peso</label>
-      <label class="export-opt"><input type="radio" name="exp-tipo" value="status"/> 🏷️ Por Status</label>
-      <label class="export-opt"><input type="radio" name="exp-tipo" value="pagos"/> ✅ Pagos</label>
-      <label class="export-opt"><input type="radio" name="exp-tipo" value="aberto"/> 🔴 Em Aberto</label>
-      <label class="export-opt"><input type="radio" name="exp-tipo" value="vencidos"/> ⚠️ Vencidos</label>
-      <label class="export-opt"><input type="radio" name="exp-tipo" value="completo"/> 📊 Completo</label>
-      <label class="export-opt"><input type="radio" name="exp-tipo" value="pensao"/> 💙 Pensão</label>
+      <label class="export-opt"><input type="radio" name="exp-tipo" value="semanal" checked onchange="updateExportOptions()"/> 📅 Semanal</label>
+      <label class="export-opt"><input type="radio" name="exp-tipo" value="mensal" onchange="updateExportOptions()"/> 📆 Mensal</label>
+      <label class="export-opt"><input type="radio" name="exp-tipo" value="peso" onchange="updateExportOptions()"/> ⚖️ Por Peso</label>
+      <label class="export-opt"><input type="radio" name="exp-tipo" value="status" onchange="updateExportOptions()"/> 🏷️ Por Status</label>
+      <label class="export-opt"><input type="radio" name="exp-tipo" value="pagos" onchange="updateExportOptions()"/> ✅ Pagos</label>
+      <label class="export-opt"><input type="radio" name="exp-tipo" value="aberto" onchange="updateExportOptions()"/> 🔴 Em Aberto</label>
+      <label class="export-opt"><input type="radio" name="exp-tipo" value="vencidos" onchange="updateExportOptions()"/> ⚠️ Vencidos</label>
+      <label class="export-opt"><input type="radio" name="exp-tipo" value="completo" onchange="updateExportOptions()"/> 📊 Completo</label>
+      <label class="export-opt"><input type="radio" name="exp-tipo" value="pensao" onchange="updateExportOptions()"/> 💙 Pensão</label>
     </div>
-    <div class="ph-right" style="margin-top:.5rem">
-      <select class="yr-sel" id="exp-year"></select>
-      <select class="yr-sel" id="exp-month"></select>
+    <!-- Seletor de semana (apenas para tipo=semanal) -->
+    <div id="exp-week-wrap" style="margin-top:.7rem;padding:.65rem .8rem;background:var(--bg3);border-radius:8px;border:1px solid var(--border)">
+      <label style="font-size:.78rem;color:var(--muted);display:block;margin-bottom:.35rem">📅 Selecionar semana para exportar:</label>
+      <select class="inp" id="exp-week" style="max-width:280px"></select>
+    </div>
+    <div id="exp-month-wrap" style="display:none;margin-top:.5rem">
+      <div class="ph-right">
+        <select class="yr-sel" id="exp-year"></select>
+        <select class="yr-sel" id="exp-month"></select>
+      </div>
     </div>
     <button class="btn btn-pri" style="margin-top:.9rem" onclick="exportExtract()">📸 Gerar Extrato (Imagem)</button>
   </div>
@@ -518,10 +545,7 @@ let dashCache={lancs:[],deps:[]}; // cache for detail modal
 // ═══════════════════════════════════════════════
 // UTILS
 // ═══════════════════════════════════════════════
-async function sha256(s){
-  const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s));
-  return Array.from(new Uint8Array(b)).map(x=>x.toString(16).padStart(2,'0')).join('');
-}
+
 function fmtBRL(v){return 'R$ '+Number(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}
 function fmtDate(d){if(!d)return'–';const[y,m,dd]=d.split('-');return`${dd}/${m}/${y}`}
 function today(){return new Date().toISOString().slice(0,10)}
@@ -576,7 +600,7 @@ function buildTabs(cid,active,cb){
 }
 
 // ═══════════════════════════════════════════════
-// AUTH
+// AUTH (Supabase Auth — seguro por RLS)
 // ═══════════════════════════════════════════════
 async function doLogin(){
   const u=document.getElementById('inp-user').value.trim();
@@ -587,44 +611,35 @@ async function doLogin(){
   if(!u||!p){err.textContent='Preencha usuário e senha.';return;}
   btn.textContent='Entrando…';btn.disabled=true;
   try{
-    const h=await sha256(p);
-    const{data,error}=await sb.from('users').select('*').eq('username',u).eq('password_hash',h).single();
-    if(error||!data){err.textContent='Usuário ou senha incorretos.';return;}
-    CU=data.username;
-    localStorage.setItem('fin_u',CU);
-    localStorage.setItem('fin_ts',Date.now());
+    const{data,error}=await sb.auth.signInWithPassword({email:u+'@dashboard.fin',password:p});
+    if(error||!data.user){err.textContent='Usuário ou senha incorretos.';return;}
+    CU=u;
     document.getElementById('login-page').style.display='none';
     document.getElementById('app').style.display='flex';
     document.getElementById('s-user').textContent='👤 '+CU;
-    startSessionTimer();
     initApp();
   }catch(e){err.textContent='Erro: '+e.message;}
   finally{btn.textContent='Entrar';btn.disabled=false;}
 }
-function doLogout(){
-  CU=null;clearSession();if(_sessTimer)clearTimeout(_sessTimer);
+async function doLogout(){
+  CU=null;
+  await sb.auth.signOut();
   document.getElementById('app').style.display='none';
   document.getElementById('login-page').style.display='flex';
   document.getElementById('inp-pass').value='';
   document.getElementById('login-err').textContent='';
 }
-const SESSION_MS = 60 * 60 * 1000; // 1 hora
-
 async function checkSession(){
-  const u=localStorage.getItem('fin_u');
-  const ts=parseInt(localStorage.getItem('fin_ts')||'0');
-  if(u && Date.now()-ts < SESSION_MS){
-    const{data}=await sb.from('users').select('username').eq('username',u).single();
-    if(data){CU=data.username;document.getElementById('login-page').style.display='none';document.getElementById('app').style.display='flex';document.getElementById('s-user').textContent='👤 '+CU;initApp();startSessionTimer();return;}
+  const{data:{session}}=await sb.auth.getSession();
+  if(session&&session.user){
+    CU=session.user.email.split('@')[0];
+    document.getElementById('login-page').style.display='none';
+    document.getElementById('app').style.display='flex';
+    document.getElementById('s-user').textContent='👤 '+CU;
+    initApp();
+  }else{
+    document.getElementById('login-page').style.display='flex';
   }
-  clearSession();
-  document.getElementById('login-page').style.display='flex';
-}
-function clearSession(){localStorage.removeItem('fin_u');localStorage.removeItem('fin_ts');}
-let _sessTimer=null;
-function startSessionTimer(){
-  if(_sessTimer)clearTimeout(_sessTimer);
-  _sessTimer=setTimeout(()=>{alert('Sessão expirada. Faça login novamente.');doLogout();},SESSION_MS);
 }
 
 // ═══════════════════════════════════════════════
@@ -895,17 +910,89 @@ async function addLancamento(){
   const juros=parseFloat(document.getElementById('lanc-juros').value)||0;
   const obs=document.getElementById('lanc-obs').value.trim();
   const fonte=document.getElementById('lanc-fonte').value||null;
+  const fixo=document.getElementById('lanc-fixo').checked;
+  const recorrN=parseInt(document.getElementById('lanc-recorr').value)||1;
   if(!data){err.textContent='Data obrigatória.';return;}
   if(!desc){err.textContent='Descrição obrigatória.';return;}
   if(!valor||valor<=0){err.textContent='Valor deve ser maior que zero.';return;}
-  const id=Date.now()+Math.floor(Math.random()*999);
-  const{error}=await sb.from('lancamentos').insert({id,username:CU,data,descricao:desc,valor,peso,status,juros_multa:juros,obs,fonte_pagamento:fonte});
-  if(error){err.textContent='Erro: '+error.message;return;}
-  ['lanc-data','lanc-desc','lanc-val','lanc-obs'].forEach(i=>document.getElementById(i).value='');
-  document.getElementById('lanc-juros').value='0';document.getElementById('lanc-peso').value='2';
-  document.getElementById('lanc-status').value='Em Aberto';document.getElementById('lanc-fonte').value='';document.getElementById('lanc-data').value=today();
-  ALM=parseInt(data.split('-')[1]);
+
+  // Coletar todas as datas do mês (recorrência)
+  const[yrStr,moStr,ddStr]=data.split('-');
+  const datesInMonth=[data];
+  for(let i=2;i<=recorrN;i++){
+    const el=document.getElementById('lanc-recorr-d'+i);
+    if(el&&el.value)datesInMonth.push(el.value);
+  }
+
+  // Se fixo: expandir para os meses restantes do ano
+  const allEntries=[];
+  if(fixo){
+    const yr=parseInt(yrStr);
+    const startMo=parseInt(moStr);
+    const day=parseInt(ddStr);
+    for(let m=startMo;m<=12;m++){
+      const maxDay=new Date(yr,m,0).getDate();
+      const d=Math.min(day,maxDay);
+      const baseDate=`${yr}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      allEntries.push(baseDate);
+      // Adicionar recorrências extras para meses subsequentes
+      for(let i=2;i<=recorrN;i++){
+        const el=document.getElementById('lanc-recorr-d'+i);
+        if(el&&el.value){
+          const[,, rdd]=el.value.split('-');
+          const rd=Math.min(parseInt(rdd),maxDay);
+          allEntries.push(`${yr}-${String(m).padStart(2,'0')}-${String(rd).padStart(2,'0')}`);
+        }
+      }
+    }
+  }else{
+    allEntries.push(...datesInMonth);
+  }
+
+  // Inserir todos os lançamentos
+  const btn=event.target;btn.disabled=true;btn.textContent='Salvando…';
+  let hasError=false;
+  for(let i=0;i<allEntries.length;i++){
+    const d=allEntries[i];
+    const id=Date.now()+i*7+Math.floor(Math.random()*99);
+    const{error}=await sb.from('lancamentos').insert({id,username:CU,data:d,descricao:desc,valor,peso,status,juros_multa:juros,obs,fonte_pagamento:fonte});
+    if(error){err.textContent='Erro: '+error.message;hasError=true;break;}
+    await new Promise(r=>setTimeout(r,8));
+  }
+  btn.disabled=false;btn.textContent='💾 Salvar Lançamento';
+  if(hasError)return;
+
+  // Reset form
+  ['lanc-desc','lanc-val','lanc-obs'].forEach(i=>document.getElementById(i).value='');
+  document.getElementById('lanc-juros').value='0';
+  document.getElementById('lanc-peso').value='2';
+  document.getElementById('lanc-status').value='Em Aberto';
+  document.getElementById('lanc-fonte').value='';
+  document.getElementById('lanc-data').value=today();
+  document.getElementById('lanc-fixo').checked=false;
+  document.getElementById('lanc-recorr').value='1';
+  toggleRecorrDates();
+  ALM=parseInt(moStr);
+  const tot=allEntries.length;
+  if(tot>1){
+    err.style.color='var(--green)';
+    err.textContent=`✅ ${tot} lançamento(s) criado(s) com sucesso!`;
+    setTimeout(()=>{err.textContent='';err.style.color='var(--red)';\},3000);
+  }
   loadLancamentos();loadWeekly();genAI();
+}
+
+function toggleRecorrDates(){
+  const n=parseInt(document.getElementById('lanc-recorr').value);
+  const container=document.getElementById('recorr-dates');
+  if(n<=1){container.style.display='none';return;}
+  container.style.display='flex';
+  // Manter o header e reconstruir os campos
+  let html='<div style="width:100%;font-size:.78rem;color:var(--muted);margin-bottom:.25rem">📅 Datas das ocorrências adicionais no mês:</div>';
+  for(let i=2;i<=n;i++){
+    html+=`<div class="fg"><label style="font-size:.72rem;color:var(--muted)">Ocorrência ${i}</label><input class="inp" type="date" id="lanc-recorr-d${i}" style="width:145px"/></div>`;
+  }
+  container.innerHTML=html;
 }
 
 
@@ -1096,10 +1183,15 @@ async function loadMetas(){
           <div><label style="font-size:.72rem;color:var(--muted);display:block;margin-bottom:.25rem">Meta (R$)</label>
             <div class="vi"><button class="vs" onclick="vstepM('${am}','m',-100)">−</button><input class="inp" type="number" id="mv-${am}" value="${meta}" min="0" step="0.01" style="width:110px;text-align:right"/><button class="vs" onclick="vstepM('${am}','m',100)">+</button></div>
           </div>
-          <div><label style="font-size:.72rem;color:var(--muted);display:block;margin-bottom:.25rem">Guardado (R$)</label>
-            <div class="vi"><button class="vs" onclick="vstepM('${am}','g',-100)">−</button><input class="inp" type="number" id="gv-${am}" value="${guard}" min="0" step="0.01" style="width:110px;text-align:right"/><button class="vs" onclick="vstepM('${am}','g',100)">+</button></div>
+          <div>
+            <div style="font-size:.72rem;color:var(--muted);margin-bottom:.35rem">Total guardado: <strong class="c-g" id="gt-${am}">${fmtBRL(guard)}</strong></div>
+            <label style="font-size:.72rem;color:var(--muted);display:block;margin-bottom:.25rem">➕ Novo Aporte (R$)</label>
+            <div class="vi"><button class="vs" onclick="vstepM('${am}','g',-10)">−</button><input class="inp" type="number" id="gv-${am}" value="0" min="0" step="0.01" style="width:110px;text-align:right"/><button class="vs" onclick="vstepM('${am}','g',10)">+</button></div>
           </div>
-          <button class="btn btn-pri btn-sm" onclick="saveMeta('${am}')">💾 Salvar</button>
+          <div style="display:flex;flex-direction:column;gap:.4rem;justify-content:flex-end">
+            <button class="btn btn-pri btn-sm" onclick="saveMeta('${am}')">💾 Salvar Meta + Aporte</button>
+            <button class="btn btn-sec btn-sm" onclick="saveMetaOnly('${am}')">🎯 Só Meta</button>
+          </div>
         </div>
         ${histHtml}
       </div>`;
@@ -1111,12 +1203,26 @@ function vstepM(am,f,d){const id=f==='m'?`mv-${am}`:`gv-${am}`;const e=document.
 
 async function saveMeta(am){
   const meta=parseFloat(document.getElementById(`mv-${am}`).value)||0;
-  const guardado=parseFloat(document.getElementById(`gv-${am}`).value)||0;
-  const{error}=await sb.from('metas').upsert({username:CU,ano_mes:am,meta,guardado},{onConflict:'username,ano_mes'});
+  const novoAporte=parseFloat(document.getElementById(`gv-${am}`).value)||0;
+  // Buscar guardado atual
+  const{data:existing}=await sb.from('metas').select('guardado').eq('username',CU).eq('ano_mes',am).maybeSingle();
+  const guardadoAtual=Number((existing||{}).guardado||0);
+  const novoTotal=guardadoAtual+novoAporte;
+  const{error}=await sb.from('metas').upsert({username:CU,ano_mes:am,meta,guardado:novoTotal},{onConflict:'username,ano_mes'});
   if(error){alert('Erro ao salvar: '+error.message);return;}
-  // Log histórico
-  const hid=Date.now()+Math.floor(Math.random()*999);
-  await sb.from('meta_historico').insert({id:hid,username:CU,ano_mes:am,data_registro:today(),valor:guardado});
+  if(novoAporte>0){
+    const hid=Date.now()+Math.floor(Math.random()*999);
+    await sb.from('meta_historico').insert({id:hid,username:CU,ano_mes:am,data_registro:today(),valor:novoAporte});
+  }
+  loadMetas();
+}
+
+async function saveMetaOnly(am){
+  const meta=parseFloat(document.getElementById(`mv-${am}`).value)||0;
+  const{data:existing}=await sb.from('metas').select('guardado').eq('username',CU).eq('ano_mes',am).maybeSingle();
+  const guardadoAtual=Number((existing||{}).guardado||0);
+  const{error}=await sb.from('metas').upsert({username:CU,ano_mes:am,meta,guardado:guardadoAtual},{onConflict:'username,ano_mes'});
+  if(error){alert('Erro ao salvar: '+error.message);return;}
   loadMetas();
 }
 
@@ -1195,6 +1301,42 @@ function setFs(px){
   if(btns[sizes[px]])btns[sizes[px]].classList.add('active');
 }
 
+// EXPORT EXTRATO - SEMANA SELECTOR
+function updateExportOptions(){
+  const tipo=document.querySelector('input[name="exp-tipo"]:checked').value;
+  const weekWrap=document.getElementById('exp-week-wrap');
+  const monthWrap=document.getElementById('exp-month-wrap');
+  if(tipo==='semanal'){
+    weekWrap.style.display='block';
+    monthWrap.style.display='none';
+    populateWeekSelector();
+  }else if(tipo==='pensao'){
+    weekWrap.style.display='none';
+    monthWrap.style.display='none';
+  }else{
+    weekWrap.style.display='none';
+    monthWrap.style.display='block';
+  }
+}
+
+function populateWeekSelector(){
+  const sel=document.getElementById('exp-week');
+  if(!sel)return;
+  sel.innerHTML='';
+  const n=new Date();
+  const cs=new Date(n);cs.setDate(n.getDate()-n.getDay());cs.setHours(0,0,0,0);
+  for(let i=0;i<12;i++){
+    const s=new Date(cs);s.setDate(cs.getDate()-(i*7));
+    const e=new Date(s);e.setDate(s.getDate()+6);
+    const sStr=s.toISOString().slice(0,10);
+    const eStr=e.toISOString().slice(0,10);
+    const o=document.createElement('option');
+    o.value=sStr+'|'+eStr;
+    o.textContent=`${fmtDate(sStr)} – ${fmtDate(eStr)}${i===0?' (semana atual)':''}`;
+    sel.appendChild(o);
+  }
+}
+
 // EXPORT EXTRATO
 async function exportExtract(){
   const tipo=document.querySelector('input[name="exp-tipo"]:checked').value;
@@ -1211,6 +1353,9 @@ async function exportExtract(){
     ]);
     L=rL.data||[];D=rD.data||[];
   }else if(tipo==='semanal'){
+    // Usar semana selecionada no dropdown
+    const wSel=document.getElementById('exp-week');
+    if(wSel&&wSel.value&&wSel.value.includes('|')){ const[sw,se]=wSel.value.split('|');ws=sw;we=se; }
     const[rL,rD]=await Promise.all([sb.from('lancamentos').select('*').eq('username',CU).gte('data',ws).lte('data',we).order('data'),sb.from('depositos').select('*').eq('username',CU).gte('data',ws).lte('data',we)]);
     L=rL.data||[];D=rD.data||[];
   }else{
@@ -1234,7 +1379,7 @@ async function exportExtract(){
   area.innerHTML=`
     <div style="text-align:center;margin-bottom:1rem;border-bottom:2px solid #334155;padding-bottom:.8rem">
       <div style="font-size:1.5rem;font-weight:bold">💰 Extrato Financeiro</div>
-      <div style="font-size:.85rem;color:#94A3B8">${tipoLabel[tipo]} — ${tipo==='pensao'?'Histórico Completo':tipo==='semanal'?fmtDate(ws)+' a '+fmtDate(we):MESES[mo]+'/'+yr} — ${today()}</div>
+      <div style="font-size:.85rem;color:#94A3B8">${tipoLabel[tipo]} — ${tipo==='pensao'?'Histórico Completo':tipo==='semanal'?fmtDate(ws)+' a '+fmtDate(we):MESES[mo]+'/'+yr} — ${fmtDate(today())}</div>
     </div>
     <div style="display:flex;gap:1rem;margin-bottom:1rem">
       <div style="flex:1;background:#1E293B;border-radius:8px;padding:.8rem;text-align:center"><div style="font-size:.7rem;color:#94A3B8;margin-bottom:.3rem">RECEITAS</div><div style="font-size:1.2rem;font-weight:bold;color:#10B981">${fmtBRL(rec)}</div></div>
@@ -1267,20 +1412,24 @@ async function doRegister(){
   const err=document.getElementById('reg-err');err.textContent='';
   if(!u||!p||!cn){err.textContent='Preencha todos os campos.';return;}
   if(p!==cn){err.textContent='Senhas não coincidem.';return;}
-  if(p.length<4){err.textContent='Senha deve ter pelo menos 4 caracteres.';return;}
+  if(p.length<6){err.textContent='Senha deve ter pelo menos 6 caracteres.';return;}
   if(!/^[a-zA-Z0-9_]{3,20}$/.test(u)){err.textContent='Usuário: 3-20 letras/números/underscore.';return;}
-  const{data:ex}=await sb.from('users').select('id').eq('username',u).maybeSingle();
-  if(ex){err.textContent='Usuário já existe. Escolha outro.';return;}
-  const h=await sha256(p);
-  const{error}=await sb.from('users').insert({username:u,password_hash:h});
-  if(error){err.textContent='Erro: '+error.message;return;}
-  err.style.color='var(--green)';err.textContent='✅ Conta criada! Fazendo login…';
-  setTimeout(()=>{
-    document.getElementById('inp-user').value=u;
-    document.getElementById('inp-pass').value='';
-    showLogin();
-    err.style.color='var(--red)';err.textContent='';
-  },1500);
+  try{
+    const{data,error}=await sb.auth.signUp({email:u+'@dashboard.fin',password:p});
+    if(error){
+      if(error.message.toLowerCase().includes('already registered')||error.message.toLowerCase().includes('already exists'))
+        err.textContent='Usuário já existe. Escolha outro.';
+      else err.textContent='Erro: '+error.message;
+      return;
+    }
+    err.style.color='var(--green)';err.textContent='✅ Conta criada! Fazendo login…';
+    setTimeout(()=>{
+      document.getElementById('inp-user').value=u;
+      document.getElementById('inp-pass').value='';
+      showLogin();
+      err.style.color='var(--red)';err.textContent='';
+    },1500);
+  }catch(e){err.textContent='Erro: '+e.message;}
 }
 
 // ═══════════════════════════════════════════════
@@ -1380,6 +1529,8 @@ function initApp(){
   const mo=new Date().getMonth()+1;
   ['dash-year','lanc-year','dep-year','meta-year','motor-year','exp-year'].forEach(id=>fillYr(id,true));
   ['dash-month','motor-month','exp-month'].forEach(fillMo);
+  // Inicializar export options (semanal por padrão)
+  setTimeout(()=>{updateExportOptions();populateWeekSelector();},100);
   ALM=mo;ADM=mo;
   // Restore theme & font
   const th=localStorage.getItem('fin_theme')||'dark';setTheme(th);
@@ -1398,3 +1549,4 @@ window.addEventListener('DOMContentLoaded',()=>{
 </script>
 </body>
 </html>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          
