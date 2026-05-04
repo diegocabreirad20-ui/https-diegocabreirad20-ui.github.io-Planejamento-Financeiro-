@@ -977,7 +977,7 @@ async function addLancamento(){
   if(tot>1){
     err.style.color='var(--green)';
     err.textContent=`✅ ${tot} lançamento(s) criado(s) com sucesso!`;
-    setTimeout(()=>{err.textContent='';err.style.color='var(--red)';\},3000);
+    setTimeout(()=>{err.textContent='';err.style.color='var(--red)';},3000);
   }
   loadLancamentos();loadWeekly();genAI();
 }
